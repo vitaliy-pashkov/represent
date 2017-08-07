@@ -10,10 +10,26 @@ Yii2 расширение для работы со структурами дан
   - Limit, offset, count работающие так как хочется
   - REST API
 
-##Установка
+Установка
+--
 
+Установка с помощью [composer](http://getcomposer.org/download/).
 
-##Использование
+Выполните:
+```
+php composer.phar require --prefer-dist vpashkov/yii2-represent
+```
+
+или добавьте
+
+```json
+"vpashkov/yii2-represent": "~1.0.0"
+```
+
+в секцию require файла composer.json.
+
+Использование
+--
 
 Перед использованием, необходимо сгенерировать модели таблиц ActiveRecord
 
@@ -71,8 +87,8 @@ GET /api/one?represent=user/edit
 POST /api/save?represent=user/edit  
 POST /api/delete?represent=user/edit  
 
-## Represent API
-
+Represent API
+--
 
 | Scope | Method | Description |
 | --------| -------- | -------- |
@@ -295,7 +311,8 @@ class View extends Represent
 После выборки словаря вызывается метод `processDICT_NAME($rows)` (где DICT_NAME = ucfirst(имя словаря)) если он определён. 
 
 
-## RepresentController API
+RepresentController API
+--
 
 RepresentController реализует REST API для методов Represent.  
 Для использования необходимо создать контроллер унаследованный от RepresentController.
