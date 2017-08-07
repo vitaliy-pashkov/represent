@@ -1,0 +1,30 @@
+{
+  "name": "vpashkov/yii2-represent",
+
+  "type": "yii2-extension",
+
+  "description": "Declarative relative CRUD operations for Yii framework",
+  "keywords": ["yii2", "crud", "declarative", "represent"],
+  "license": "BSD-3-Clause",
+  "support": {
+    "issues": "https://github.com/vitaliy-pashkov/yii2-represent/issues",
+    "source": "https://github.com/vitaliy-pashkov"
+  },
+  "authors": [
+    {
+      "name": "Vitaliy Pashkov",
+      "email": "vitaliy_pashkov@inbox.ru"
+    }
+  ],
+
+  "require": {
+    "yiisoft/yii2": "~2.0.0"
+  },
+
+  "autoload": {
+    "psr-4": {
+      "vpashkov\\represent\\": "src/",
+      "@vpashkov\\represent\\tests\\" : "tests/env/"
+    }
+  }
+}

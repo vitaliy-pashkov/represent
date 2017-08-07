@@ -1,0 +1,33 @@
+[
+  {
+    "#table": "test1",
+    "id": "3",
+    "col1": "d",
+    "test3_id": "1",
+    "test2s": [
+      {
+        "#table": "test2",
+        "test1_id": "3",
+        "id": "9",
+        "col2": "."
+      },
+      {
+        "#table": "test2",
+        "test1_id": "3",
+        "id": "8",
+        "col2": ","
+      },
+      {
+        "#table": "test2",
+        "test1_id": "3",
+        "id": "7",
+        "col2": "m"
+      }
+    ],
+    "test3": {
+      "#table": "test3",
+      "id": "1",
+      "col3": "q"
+    }
+  }
+]
