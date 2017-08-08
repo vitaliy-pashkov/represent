@@ -1,42 +1,43 @@
 Yii2-Represent
 ====
 
-Yii2 расширение для работы со структурами данных в реляционных БД.
 
-Задачи, решаемые расширением:
+Yii2 extension for CRUD operations with data structures in relational databases.
 
-  - Декларативный стиль описания структуры данных
-  - Полноценный CRUD для структур данных
-  - Limit, offset, count работающие так как хочется
+Features:
+
+  - Declarative style of describing the data structure
+  - Full CRUD functionality for data structures
+  - Limit, offset, count working as you want
   - REST API
 
-Установка
+Install
 --
 
-Установка с помощью [composer](http://getcomposer.org/download/).
+The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
 
-Выполните:
+Run:
 ```
 php composer.phar require --prefer-dist vpashkov/yii2-represent
 ```
 
-или добавьте
+or add
 
 ```json
 "vpashkov/yii2-represent": "~1.0.0"
 ```
 
-в секцию require файла composer.json.
+to the require section of your composer.json file.
 
-Использование
+Usage
 --
 
-Перед использованием, необходимо сгенерировать модели таблиц ActiveRecord
+Before use Represent need to generate ActiveRecord models for tables
 
-### 1. Вместо ActiveRecord
+### 1. Instead ActiveRecord
 
 ```php
-$userRepresent = new Represent([            //объявление структуры
+$userRepresent = new \vpashkov\represent\Represent([      //declaration
     '#model' => User::class,
     '#actions' => 'crud',
     '#limit' => 10,
@@ -45,18 +46,18 @@ $userRepresent = new Represent([            //объявление структ�
         'status',
     ]
 ]);
-$users = $userRepresent->getAll();          //выборка структуры
-$users[0]['orders'][0]['status'] = 'new';   //изменение структуры
-$userRepresent->saveAll($users);            //сохранение структуры
+$users = $userRepresent->getAll();          //selection
+$users[0]['orders'][0]['status'] = 'new';   //modification
+$userRepresent->saveAll($users);            //saving
 ```
 
-### 2. Наследование классов от Represent
+### 2. Inheritance of classes from Represent
 
-* Создаём класс в пространстве имён `app\represents\MODEL_NAME` или `app\modules\MODULE_NAME\represents\MODEL_NAME`
-* Описываем структуру методом `getMap`
+* Create class in namespace `app\represents\MODEL_NAME` or `app\modules\MODULE_NAME\represents\MODEL_NAME`
+* Describe the structure by `getMap()`
 ```php
 namespace app\represent\user;
-class Edit extends Represent
+class Edit extends \vpashkov\represent\Represent
     {
     public function getMap()
         {
@@ -72,16 +73,17 @@ class Edit extends Represent
         }
     }
 ```
-#### 2.1 Создаём объект класса по имени и используем CRUD методы 
+#### 2.1 Create Represent object by name and use CRUD methods
+
 ```php
 $userRepresent = Represent::create('user/edit');
-$users = $userRepresent->getAll();          //выборка структуры
-$users[0]['orders'][0]['status'] = 'new';   //изменение структуры
-$userRepresent->saveAll($users);            //сохранение структуры
+$users = $userRepresent->getAll();          //selection
+$users[0]['orders'][0]['status'] = 'new';   //modification
+$userRepresent->saveAll($users);            //saving
 ```
-#### 2.2 Создаём api контроллер унаследованный от RepresentController, реализующий REST API
+#### 2.2 Create api controller extends RepresentController
 
-Обращаемся к CRUD действиям контроллера:  
+Call CRUD actions:  
 GET /api/all?represent=user/edit  
 GET /api/one?represent=user/edit  
 POST /api/save?represent=user/edit  
@@ -90,61 +92,63 @@ POST /api/delete?represent=user/edit
 Represent API
 --
 
+#### Methods
 | Scope | Method | Description |
 | --------| -------- | -------- |
-| public | __construct(`$map = false`, `$options=[]`) | Конструктор |
-| public | setMap(`$map`) | Переопределяет структуру данных |
-| public | getAll() | Возвращает массив структур данных |
-| public | getOne() | Возвращает структуру данных |
-| public | getCount() | Возвращает количество структур данных с учётом `#where` зависимых записей и `#offset` |
-| public | getMeta() | Возвращает статистику по структуре |
-| public | getDicts() | Возвращает словари |
-| public | getDict($dictName) | Возвращает словарь по имени |
-| public | saveAll(`$rows`) | Возвращает массив статусов сохранения и новые структуры |
-| public | saveOne(`$row`) | Возвращает статус сохранения и новую структуру |
-| public | deleteAll(`$rows`) |Возвращает массив статусов удаления и структуры, содержащие только первичный ключ удалённых записей|
-| public | deleteOne(`$row`) | Возвращает статус удаления и структуру, содержащую только первичный ключ удалённой записи |
-| protected | getMap() | Переопределение метода позволяет описать структуру данных в унаследованном классе. Возвращает `$map` |
-| protected | getDictMaps() | Переопределение метода позволяет описать структуры словарей. Возвращает hash массив ```['dictName' => $dictMap]``` |
-| protected|  getDefaultOptions() | Переопределение метода позволяет описать параметры по умолчанию. Возвращает массив параметров |
-| protected | process(`$rows`) | Переопределение метода позволяет обработать данные после выборки. Возвращает `$rows`|
-| protected | deprocess(`$row`) | Переопределение метода позволяет обработать данные перед сохранением или удалением. Возвращает `$row`|
-| protected | processDICT_NAME($dict) | Определение метода позволяет обработать данные словаря после выборки |
+| public | __construct(`$map = false`, `$options=[]`) | Constructor |
+| public | setMap(`$map`) | Overrides the data structure |
+| public | getAll() | Returns an array of data structures |
+| public | getOne() | Returns the data structure |
+| public | getCount() | Returns the count of data structures with considering `#offset` and `#where` relating data |
+| public | getMeta() | Returns statistics by structure |
+| public | getDicts() | Returns dictionaries |
+| public | getDict($dictName) | Returns the dictionary by name |
+| public | saveAll(`$rows`) | Returns an array of storage statuses and new structures |
+| public | saveOne(`$row`) | Returns the save status and the new structure |
+| public | deleteAll(`$rows`) | Returns an array of deletion statuses and structures that contain only the primary key of the deleted records|
+| public | deleteOne(`$row`) | Returns the delete status and a structure that contains only the primary key of the deleted record |
+| protected | getMap() | Overriding the method allows describe the data structure in an inherited class. Return `$map` |
+| protected | getDictMaps() | Overriding the method allows describe the structure of dictionaries in an inherited class. Return hash array ```['dictName' => $dictMap]``` |
+| protected|  getDefaultOptions() | Overriding the method allows describe the default parameters. Return parameters array |
+| protected | process(`$rows`) | Overriding the method allows process data after selecting. Return `$rows`|
+| protected | deprocess(`$row`) | Overriding the method allows process data before saving or deleting. Return `$row`|
+| protected | processDICT_NAME($dict) | The method definition allows process the dictionary data after a selecting |
 
+#### Properties
 | Scope | Property | Description |
 | --------| -------- | -------- |
-| public | $maxLimit = 1000000 | Int, Максимальный limit для запросов. Используется для предотвращения DoS-атак  |
-| public | $options | Array, Свойства собираются из `getDefaultOptions()`, GET и POST параметров запроса и аргумента $options в конструкторе. Следует использовать для описания $map в общем виде |
-| protected | $collectRequestOptions = true | Boolean, Если свойство определено в true, Represent собирает GET и POST параметры запроса в свойство $options |
+| public | $maxLimit = 1000000 | Int, mximum limit. Used to prevent DoS-attacks  |
+| public | $options | Array, Options collect from `getDefaultOptions()`, GET and POST request parameters and $options argument in constructor. |
+| protected | $collectRequestOptions = true | Boolean, if true, Represent collect GET and POST request parameters in $options |
 
 
-### Описание структуры данных $map
+### Description of the data structure $map
 
-Структура данных описывается ассоциативным массивом PHP.  
-Ключ специальных полей начинается с символа `#`   
-Поля таблицы указываются без ключа.   
-Связанные таблицы указываются ключом - названием связи ActiveRecord.   
-Нет необходимости указывать первичные и внешние ключи - они добавятся автоматически.
+The data structure is described by an associative array of PHP.  
+The special field key begins with the `#`.  
+The fields of the table indicated without a key.   
+Linked tables indicated by the key - the ActiveRecord relation name.   
+There is no need to specify primary and foreign keys - they will be added automatically.
 
-Структура данных сохраняется в объекте Represent и используется для CRUD методов.
-Переопределить структуру данных можно методом `setMap($newMap)`
+The data structure is stored in the Represent object and is used for CRUD methods.
+You can override the data structure using the `setMap($newMap)`
   
 
-#### Рекомендуемый алгоритм описания структуры:
-* Указываем корневую модель запроса `#model`
-* Указываем действия `#actions`, которые Represent может делать с данной таблицей
-* Перечисляем правила выборки `#where`, `#order`, `#limit`, `#offset`
-* Перечисляем поля, которые нужно выбрать из таблицы
-* Перечисляем свзи модели с другими моделями
-  - действия `#actions`, которые Represent может делать с данной таблицей
-  - правила выборки `#where`
-  - поля, которые нужно выбрать
-  - повторяем рекурсивно для всех связанных моделей
+#### Recommended algorithm for describing the structure:
+* Specify the root `#model`
+* Specify `#actions`, which Represent can do with this table
+* Specify selection rules `#where`, `#order`, `#limit`, `#offset`
+* Specify the fields to select from the table
+* Specify relations
+  - specify `#actions`, which Represent can do with this table
+  - specify selection rules `#where`
+  - specify the fields to select from the table
+  - repeat recursively for all related models
    
-#### Полный пример:
+#### Full example:
 ```php
 new Represent([
-    // Специальные поля
+    // special field
     '#model' => Table1::class,
     '#actions' => 'crud',
     '#whereId' => 'id = 1',
@@ -152,80 +156,80 @@ new Represent([
     '#order' => 'table2.field1',
     '#limit' => 10,
     '#offset' => 10,
-    //Поля таблицы table1
+    // fields of table1
     'field1',
     'field2',
     'field3',
-    //Связанная таблица table2. Ключ 'table2s' - название связи ActiveRecord
+    // relation table2. Key 'table2s' - relation name of ActiveRecord
     'table2s' => [
-        // Специальные поля
+        // special field
         '#actions' => 'crud',
-        // Поля таблицы table2
+        // fields of table2
         'field1',
         'field2',
-        //Связанная таблица table3.
+        // relation table3.
         'table3' => [
             '#actions' => 'crud',
-            '*', // Выбрать все поля таблицы
+            '*', // select all fields
         ],
     ],
-    //Связанная таблица table4.
+    //relation table4.
     'table4' => [
-        //Если не указывать никакие поля таблицы выберется только первичный ключ
+        //if not specify any fields, Represent select only primary key
     ]
 ]);
 ```
 
-#### Специальные поля в описании структуры
+#### Special field in description of the data structure
 
 ##### * 
-Указывается без ключа. Выбирает все поля текущей таблицы.
+Specify without key. Select all fields from current table.
 
 ##### #model
-Класс корневой модели.   
-Обязательное поле у корневой модели. В дочерних структурах игнорируется.
+Root model class name.  
+Required field for the root model. In child structures it is ignored.
 ##### #actions
-Строка которая может содержать символы 'crud'. Наличие символа в строке разрешает соответствующее действие с данной моделью. Для каждой структуры (корневой и дочерних) разная.  
-Не обязательное поле. По умолчанию: `'r'`
+A string that can contain characters 'crud'. The presence of a character allows the corresponding action with this model.
+Optional field. By default: `'r'`
 ##### #where...
-Ключ массива, начинающийся с '#where' описывает условие выборки. Можно описать несколько условий таким образом:
+The array key, starting with '#where' describes the conditions. It is possible to describe several conditions in this way:
 ```
 '#whereId' => ['id' => 1],
 '#whereStatusNew'  => 'status = "new"'
 ```
-Условия объединяются оператором 'AND'  
-Значением может быть SQL строка или массив в hash формате yii (формат операторов пока не поддерживается)  
-Условия, указанные у дочерних моделей добавляются к условию JOIN ON    
-Не обязательное поле.
+Conditions are combined by the 'AND' operator   
+The value can be a SQL string or array in hash format Yii (operator format is not yet supported)
+The conditions specified in the child models are added to the condition JOIN ON    
+Optional field.
 ##### #order
-Поля по которым сортируется выборка. SQL Строка или массив в hash формате.  
-Указывается только у корневой модели.  
-Не обязательное поле.
+Fields by which the sample is sorted. SQL string or array in hash format.  
+Specified only for the root model.  
+Optional field.
 
 ##### #limit 
-Количество записей корневой модели, которые необходимо выбрать. Связанные модели не влияют на количество записей.  
-Указывается только у корневой модели.  
-Не обязательное поле.
+The number of records from root model to select. Related models do not affect the number of records.  
+Specified only for the root model.    
+Optional field.
 
 ##### #offset 
-Количество первых записей корневой модели, которые пропускаются при выборке. Связанные модели не влияют на offset.  
-Указывается только у корневой модели.  
-Не обязательное поле.  
+The number of the first records from root model that are skipped. Related models do not affect at offset.  
+Specified only for the root model.      
+Optional field.  
 
-##### Обращение к полям таблиц в значениях специальных полей #where и #order
-Вне зависимости от позиции специального поля можно обратиться к любому полю дочерней таблицы с указанием полного пути до этого поля.  
-Поля коренной таблицы указываются без префикса: `id`, `field1`  
-Поля дочерних таблиц: `table2s.field1`, `table2s.table3.field1`  
-Таким образом, конфликт имён не возможен.  
-В строках имена полей должны быть отделены пробелами, в том числе от скобок.  
+##### Access to the fields of tables in the values of special fields #where и #order
+Regardless of the position of the special field, it possible refer to any field of the child table by the full path to this field.  
+The root table fields are specified without a prefix: `id`, `field1`  
+Fields of child tables: `table2s.field1`, `table2s.table3.field1`  
+Thus, a conflict of names is not possible.  
+In the string values, the field names must be separated by spaces, including brackets.  
 
 
-### Параметризация структуры данных
+### Parameterization of data structure
 
 #### `$options`
-При наследовании от Represent и описании структуры данных методом `getMap()` структуру данных необходимо описывать в общем виде.  
+When inheriting from Represent and describing the data structure using the `getMap ()` method, the data structure should be described in a general way.
 
-Пример:
+Example:
 ```php
 namespace app\represent\user;
 class View extends Represent
@@ -248,90 +252,90 @@ class View extends Represent
     }
 ```
 
-`$this->options['id']` пользователя может быть получен из GET или POST параметров запроса или из конструктора класса.
+`$this->options['id']` can be obtained from the GET or POST request parameters or from the class constructor.
 
 #### `$options['map']`
 
-Некоторые параметры запроса могут быть переданы в `$map` автоматически из `$options['map']`   
-`$options['map']` - json строка со следующей структурой:
+Some query parameters can be passed to `$map` automatically from` $options['map'] `   
+`$options['map']` - json string with the following structure:
  
 ```json
 {
-  "filter": [FilterData], //Структура данных фильтра 
-  "where": [WhereType], //Аналогично #where
-  "order":  [OrderType], //Аналогично #order
+  "filter": [FilterData], //Filter data structure 
+  "where": [WhereType], //Similarly #where
+  "order":  [OrderType], //Similarly #order
   "limit": [int], 
   "offset":  [int]
 }
 ```
-Все поля опциональны.
+All fields is optional.
 
-### Выборка данных
+### Selecting data
 
-Данные выбираются методами `getAll()` и `getOne()`  
-* Реализуется жадная загрузка;  
-* Методами ActiveQuery формируется один SQL запрос;  
-* Связанные таблицы выбираются с помощью LEFT JOIN;  
-* \#where связанных таблиц добавляется к условию ON;  
-* \#limit реализуется с помощью подзапроса во FROM, работает именно так, как он и должен работать (однако, применим только к корневой таблице);  
-* После выполнения запроса строятся структуры данных алгоритмом сложностью N в лучшем случае и N*M/2 в худшем случае (где N - кол-во строк в выборке, M - итоговое кол-во структур данных ).
-* После построения структуры данных вызывается метод `process($rows)` который можно переопределить, что позволяет дополнительно обработать данные
-* Жизненный цикл получения данных ActiveRecord НЕ СОХРАНЯЕТСЯ
-* Для соединения с БД используется метод getDb() корневой модели
+Selecting methods `getAll()` and `getOne()`  
+* Eager loading by one SQL request, creating by ActiveQuery methods;    
+* Related tables are selected using LEFT JOIN;
+* \#where of relation tables add at ON condition;    
+* \#limit is implemented using a subquery in FROM;  
+* After the query is executed, data structures are constructed by the algorithm with complexity N at best and N * M / 2 in the worst case (where N is the number of rows in the sample, M is the total number of data structures).
+* After building the data structure, calling `process($rows)`, which allows you to further process the data
+* ActiveRecord querying data life cycle is not implemented  
+* DB connection get from `getDb()` of root model
 
-### Сохранение данных
 
-Данные сохраняются методами `saveAll($rows)` и `saveOne($row)`
-* Сохранение осуществляется методами ActiveRecord, поэтому сохраняется [жизненный цикл сохранения данных ActiveRecord](http://stuff.cebe.cc/yii2docs-ru/guide-db-active-record.html#saving-data-life-cycle)
-* Автоматически определяется порядок в котором необходимо сохранять модели, чтобы избежать конфликта внешних ключей
-* Сохраняются только поля таблиц, перечисленные в `$map` (в том числе специальным полем `*`)
-* Модель создаётся только если в `#actions` текущей модели есть флаг create - `c`, иначе действие игнорируется
-* Модель изменяется только если в `#actions` текущей модели есть флаг update - `u`, иначе действие игнорируется
-* Флаги в данных:
-    * **`'#delete' => true`** добавление данного флага в сохраняемую структуру данных удалит текущую и дочерние модели, если в `#actions` моделей есть флаг delete - `d`
-    * **`'#unlink' => true`** добавление данного флага вызывает метод `unlink()` у связанных моделей
+### Saving data
 
-### Удаление данных
+Saving methods `saveAll($rows)` and `saveOne($row)`
+* Saving implemented by ActiveRecord, therefore [ActiveRecord Saving Data Life Cycle](http://www.yiiframework.com/doc-2.0/guide-db-active-record.html#saving-data-life-cycle) is implemented
+* Automatically determines the order in which save the models to avoid foreign key conflicts
+* Saving only fields specified in `$map` (including `*`)
+* Record insert only if `#actions` include create flag - `c`, otherwise the action is ignored
+* Record update only if `#actions` include update flag - `u`, otherwise the action is ignored
+* Flags in data:
+    * **`'#delete' => true`** adding this flag, delete current and child records if `#actions` contains `d`
+    * **`'#unlink' => true`** adding this flag, call `unlink()` method from related models
 
-Данные удаляются методами `deleteAll($rows)` и `deleteOne($row)`
-* Удаление осуществляется методами ActiveRecord, поэтому сохраняется [жизненный цикл удаления данных ActiveRecord](http://stuff.cebe.cc/yii2docs-ru/guide-db-active-record.html#deleting-data-life-cycle) 
-* Автоматически определяется порядок в котором необходимо удалять модели, чтобы избежать конфликта внешних ключей
-* Модель удаляется только если в `#actions` есть флаг update `d`, иначе действие игнорируется
+### Delete data
 
-### Словари
+Delete methods `deleteAll($rows)` and `deleteOne($row)`
+* Saving implemented by ActiveRecord, therefore [ActiveRecord Deleting Data Life Cycle](http://www.yiiframework.com/doc-2.0/guide-db-active-record.html#deleting-data-life-cycle) is implemented
+* Automatically determines the order in which delete the models to avoid foreign key conflicts
+* Record delete only if `#actions` include delete flag - `d`, otherwise the action is ignored
 
-При работе со структурами данных, зачастую, возникает необходимость обращаться к данным, которые напрямую не входят в структуру, но тем или иным образом аффилированы с ней.  
-Например, чтобы сформировать select связанной модели - необходим перечень всех моделей.  
+### Dictionaries
+
+When working with data structures, it often becomes necessary to access data that is not directly part of the structure, but is in one way or another affiliated with it.  
+For example, to form a select related model, you need a list of all models.  
   
-Словари - структуры данных, описываемые в методе `getDictMaps()`, которые можно выбирать методами `getDicts()` и `getDict($dictName)`.  
-Структуры данных описываются аналогичным образом, за некоторым исключением:
-* Поле `#action` - игнорируется; словари можно только выбирать
-* Поле `#singleton` boolean; если true, словарь не выбирается методом `getDicts()`; имеет смысл при параметризации структуры словаря  
+Dictionaries are data structures described in the `getDictMaps()` method, which can be selected using `getDicts()` and `getDict($ dictName)`.    
+Data structures are described in a similar way, with a few exceptions:
+* The field `#action` is ignored; Dictionaries can only select
+* The field `#singleton` boolean; if true, dictionary not selected by `getDicts()`; It makes sense for the dictionary structure to be parameterized  
 
-После выборки словаря вызывается метод `processDICT_NAME($rows)` (где DICT_NAME = ucfirst(имя словаря)) если он определён. 
+After the dictionary is selected, call the method `processDICT_NAME($rows)` (where DICT_NAME = ucfirst(dict name)) if it exist. 
 
 
 RepresentController API
 --
 
-RepresentController реализует REST API для методов Represent.  
-Для использования необходимо создать контроллер унаследованный от RepresentController.
+RepresentController implement REST API for Represent methods.  
+For use create controller extends RepresentController.
 
 
 | Scope | Method | Description |
 | --------| -------- | -------- |
-| public | actionOne($represent, $dicts = false) | Возвращает json Represent->getOne(); если $dicts == true добавляет к результату Represent->getDicts() |
-| public | actionAll($represent,  $count = false, $meta = false, $dicts = false) | Возвращает json Represent->getAll(); опционально добавляет getCount(), getDicts(), getMeta() |
-| public | actionSave($represent) | В POST параметрах ищет `rows` или `row` и вызывает Represent->saveAll($rows) или $represent->saveOne($row) соответственно. Возвращает json статусов сохранения|
-| public | actionDelete($represent) | В POST параметрах ищет `rows` или `row` и вызывает Represent->deleteAll($rows) или $represent->deleteOne($row) соответственно. Возвращает json статусов удаления|
-| public | actionDicts($represent) | Возвращает json Represent->getDicts() |
-| public | actionDict($represent, $dictName) | Возвращает json Represent->getDict($dictName) |
-| public | actionCount($represent) | Возвращает json Represent->getCount() |
-| public | actionMeta($represent) | Возвращает json Represent->getMeta() |
+| public | actionOne($represent, $dicts = false) | Return json Represent->getOne(); if $dicts == true add Represent->getDicts() |
+| public | actionAll($represent,  $count = false, $meta = false, $dicts = false) | Return json Represent->getAll(); optionally adds getCount(), getDicts(), getMeta() |
+| public | actionSave($represent) | In POST parameters find `rows` or `row` and call Represent->saveAll($rows) or $represent->saveOne($row) respectively. Return json save statuses|
+| public | actionDelete($represent) | In POST parameters find `rows` or `row` and call Represent->deleteAll($rows) or $represent->deleteOne($row) respectively. Return json delete statuses|
+| public | actionDicts($represent) | Return json Represent->getDicts() |
+| public | actionDict($represent, $dictName) | Return json Represent->getDict($dictName) |
+| public | actionCount($represent) | Return json Represent->getCount() |
+| public | actionMeta($represent) | Return json Represent->getMeta() |
 
-Параметр $represent для действий - имя Represent, формируемое следующим образом.  
-Двусложное имя:  
-`'user/view-all'` - создаст экземпляр класса `\app\represents\user\ViewAll`  
+Argument $represent is - Represent name, Formed as follows:  
+Two-syllable name:  
+`'user/view-all'` - create object of `\app\represents\user\ViewAll`  
 
-Трёхсложное имя:  
-`'admin/user/viewAll'` - создаст экземпляр класса `\app\modules\admin\represents\user\ViewAll`
+Three-syllable name:  
+`'admin/user/viewAll'` - create object of `\app\modules\admin\represents\user\ViewAll`

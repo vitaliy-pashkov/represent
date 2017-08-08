@@ -3,7 +3,7 @@
 
   "type": "yii2-extension",
 
-  "description": "Declarative relative CRUD operations for Yii framework",
+  "description": "Yii2 extension for CRUD operations with data structures in relational databases.",
   "keywords": ["yii2", "crud", "declarative", "represent"],
   "license": "BSD-3-Clause",
   "support": {
