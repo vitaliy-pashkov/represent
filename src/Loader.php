@@ -86,7 +86,7 @@ class Loader
         list($selectArray, $relationArray) = $this->generateArrays($this->map);
         /** @var \yii\db\ActiveQuery $query */
         $query = $this->map->modelClass::find();
-        $query->from($this->fromQuery($relationArray, true));
+        $query->from($this->fromQuery($relationArray, true, false));
         $query->select(['count(*)']);
         return $query;
     }
@@ -121,7 +121,7 @@ class Loader
     }
 
 
-    protected function fromQuery($relationArray, $force = false)
+    protected function fromQuery($relationArray, $force = false, $limit = true)
     {
         if (($this->map->limit === false && $this->map->offset === false) && $force === false) {
             return [$this->map->shortName => $this->map->tableName];
@@ -141,8 +141,11 @@ class Loader
         $query->select($selectArray);
         $query->groupBy($selectArray);
 
-        $query->limit($this->map->limit);
-        $query->offset($this->map->offset);
+        if ($limit === true) {
+            $query->limit($this->map->limit);
+            $query->offset($this->map->offset);
+        }
+
 
         return [$this->map->shortName => $query];
     }

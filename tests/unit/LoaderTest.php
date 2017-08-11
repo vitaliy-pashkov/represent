@@ -234,7 +234,7 @@ class LoaderTest extends \Codeception\Test\Unit
 			],
 		]);
 		$count = $represent->getCount();
-		$this->assertEquals(5,$count);
+		$this->assertEquals(9,$count);
 		}
 
 	public function testCount6()
@@ -254,7 +254,7 @@ class LoaderTest extends \Codeception\Test\Unit
 			],
 		]);
 		$count = $represent->getCount();
-		$this->assertEquals(6,$count);
+		$this->assertEquals(9,$count);
 		}
 
 	public function testCount7()
@@ -275,7 +275,7 @@ class LoaderTest extends \Codeception\Test\Unit
 			],
 		]);
 		$count = $represent->getCount();
-		$this->assertEquals(1,$count);
+		$this->assertEquals(2,$count);
 		}
 
 	public function testMeta1()
