@@ -18,7 +18,7 @@ modules:
             user: 'represent_tester'
             password: '123'
             dump: _data/data.sql
-#            populate: true
+            populate: true
 #            cleanup: true
 #            populator: 'mysql -u represent_tester --password=123 -h $host represent_test < tests/_data/data.sql'
       - Yii2:

@@ -30,8 +30,8 @@ class BuilderTest extends \Codeception\Test\Unit
 			],
 		]);
 		$data = $represent->getAll();
-		file_put_contents (\Yii::getAlias('@testData/builder/general.json'), json_encode($data));
-//		$this->assertJsonStringEqualsJsonFile(\Yii::getAlias('@testData/builder/general.json'), json_encode($data));
+//		file_put_contents (\Yii::getAlias('@testData/builder/general.json'), json_encode($data));
+		$this->assertJsonStringEqualsJsonFile(\Yii::getAlias('@testData/builder/general.json'), json_encode($data));
 		}
 
 

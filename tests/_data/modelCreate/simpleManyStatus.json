@@ -1,1 +1,1 @@
-[{"status":"OK","row":[{"#table":"test1","id":"10","col1":"qwe","test3_id":"1"}],"action":"c"},{"status":"OK","row":[{"#table":"test1","id":"11","col1":"qwe","test3_id":"1"}],"action":"c"},{"status":"OK","row":[{"#table":"test1","id":"12","col1":"qwe","test3_id":"1"}],"action":"c"}]
+[{"status":"OK","row":{"#table":"test1","id":"10","col1":"qwe","test3_id":"1"},"action":"c"},{"status":"OK","row":{"#table":"test1","id":"11","col1":"qwe","test3_id":"1"},"action":"c"},{"status":"OK","row":{"#table":"test1","id":"12","col1":"qwe","test3_id":"1"},"action":"c"}]

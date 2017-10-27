@@ -1,145 +1,145 @@
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+# SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+# SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+# SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test3`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test3` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test3` (
+#   `id` INT NOT NULL,
+#   `col3` VARCHAR(45) NULL,
+#   PRIMARY KEY (`id`))
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test1`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test1` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test1` (
+#   `id` INT NOT NULL,
+#   `col1` VARCHAR(45) NULL,
+#   `test3_id` INT NOT NULL,
+#   PRIMARY KEY (`id`),
+#   INDEX `fk_map1_map31_idx` (`test3_id` ASC),
+#   CONSTRAINT `fk_map1_map31`
+#   FOREIGN KEY (`test3_id`)
+#   REFERENCES `represent_test`.`test3` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION)
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test2`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test2` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test2` (
+#   `id` INT NOT NULL,
+#   `col2` VARCHAR(45) NULL,
+#   `test1_id` INT NOT NULL,
+#   PRIMARY KEY (`id`),
+#   INDEX `fk_map2_map11_idx` (`test1_id` ASC),
+#   CONSTRAINT `fk_map2_map11`
+#   FOREIGN KEY (`test1_id`)
+#   REFERENCES `represent_test`.`test1` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION)
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test5`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test5` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test5` (
+#   `id` INT NOT NULL,
+#   `col` VARCHAR(45) NULL,
+#   PRIMARY KEY (`id`))
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test4`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test4` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test4` (
+#   `id` INT NOT NULL,
+#   `col4` VARCHAR(45) NULL,
+#   `test5_id` INT NULL,
+#   PRIMARY KEY (`id`),
+#   INDEX `fk_test4_test51_idx` (`test5_id` ASC),
+#   CONSTRAINT `fk_test4_test51`
+#   FOREIGN KEY (`test5_id`)
+#   REFERENCES `represent_test`.`test5` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION)
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test2_has_test4`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test2_has_test4` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test2_has_test4` (
+#   `test2_id` INT NOT NULL,
+#   `test4_id` INT NOT NULL,
+#   PRIMARY KEY (`test2_id`, `test4_id`),
+#   INDEX `fk_map2_has_map4_map41_idx` (`test4_id` ASC),
+#   INDEX `fk_map2_has_map4_map21_idx` (`test2_id` ASC),
+#   CONSTRAINT `fk_map2_has_map4_map21`
+#   FOREIGN KEY (`test2_id`)
+#   REFERENCES `represent_test`.`test2` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION,
+#   CONSTRAINT `fk_map2_has_map4_map41`
+#   FOREIGN KEY (`test4_id`)
+#   REFERENCES `represent_test`.`test4` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION)
+#   ENGINE = InnoDB;
+#
+#
+# -- -----------------------------------------------------
+# -- Table `represent_test`.`test6`
+# -- -----------------------------------------------------
+# DROP TABLE IF EXISTS `represent_test`.`test6` ;
+#
+# CREATE TABLE IF NOT EXISTS `represent_test`.`test6` (
+#   `id` INT NOT NULL,
+#   `col` VARCHAR(45) NULL,
+#   `test5_id` INT NOT NULL,
+#   PRIMARY KEY (`id`),
+#   INDEX `fk_test6_test51_idx` (`test5_id` ASC),
+#   CONSTRAINT `fk_test6_test51`
+#   FOREIGN KEY (`test5_id`)
+#   REFERENCES `represent_test`.`test5` (`id`)
+#     ON DELETE NO ACTION
+#     ON UPDATE NO ACTION)
+#   ENGINE = InnoDB;
+#
+#
+# SET SQL_MODE=@OLD_SQL_MODE;
+# SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+# SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 
--- -----------------------------------------------------
--- Table `represent_test`.`test3`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test3` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test3` (
-  `id` INT NOT NULL,
-  `col3` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test1`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test1` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test1` (
-  `id` INT NOT NULL,
-  `col1` VARCHAR(45) NULL,
-  `test3_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_map1_map31_idx` (`test3_id` ASC),
-  CONSTRAINT `fk_map1_map31`
-  FOREIGN KEY (`test3_id`)
-  REFERENCES `represent_test`.`test3` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test2`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test2` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test2` (
-  `id` INT NOT NULL,
-  `col2` VARCHAR(45) NULL,
-  `test1_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_map2_map11_idx` (`test1_id` ASC),
-  CONSTRAINT `fk_map2_map11`
-  FOREIGN KEY (`test1_id`)
-  REFERENCES `represent_test`.`test1` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test5`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test5` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test5` (
-  `id` INT NOT NULL,
-  `col` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test4`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test4` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test4` (
-  `id` INT NOT NULL,
-  `col4` VARCHAR(45) NULL,
-  `test5_id` INT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_test4_test51_idx` (`test5_id` ASC),
-  CONSTRAINT `fk_test4_test51`
-  FOREIGN KEY (`test5_id`)
-  REFERENCES `represent_test`.`test5` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test2_has_test4`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test2_has_test4` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test2_has_test4` (
-  `test2_id` INT NOT NULL,
-  `test4_id` INT NOT NULL,
-  PRIMARY KEY (`test2_id`, `test4_id`),
-  INDEX `fk_map2_has_map4_map41_idx` (`test4_id` ASC),
-  INDEX `fk_map2_has_map4_map21_idx` (`test2_id` ASC),
-  CONSTRAINT `fk_map2_has_map4_map21`
-  FOREIGN KEY (`test2_id`)
-  REFERENCES `represent_test`.`test2` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_map2_has_map4_map41`
-  FOREIGN KEY (`test4_id`)
-  REFERENCES `represent_test`.`test4` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-  ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `represent_test`.`test6`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `represent_test`.`test6` ;
-
-CREATE TABLE IF NOT EXISTS `represent_test`.`test6` (
-  `id` INT NOT NULL,
-  `col` VARCHAR(45) NULL,
-  `test5_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_test6_test51_idx` (`test5_id` ASC),
-  CONSTRAINT `fk_test6_test51`
-  FOREIGN KEY (`test5_id`)
-  REFERENCES `represent_test`.`test5` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-  ENGINE = InnoDB;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-
-
-# DELETE FROM `test3`;
-# DELETE FROM `test1`;
-# DELETE FROM `test2_has_test4`;
-# DELETE FROM `test2`;
-# DELETE FROM `test4`;
-# DELETE FROM `test5`;
-# DELETE FROM `test6`;
-# DELETE FROM `test7`;
+DELETE FROM `test3`;
+DELETE FROM `test1`;
+DELETE FROM `test2_has_test4`;
+DELETE FROM `test2`;
+DELETE FROM `test4`;
+DELETE FROM `test5`;
+DELETE FROM `test6`;
+DELETE FROM `test7`;
 
 
 INSERT INTO `represent_test`.`test3` (`id`, `col3`) VALUES ('1', 'q');
