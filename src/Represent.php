@@ -204,7 +204,12 @@ class Represent
             if ($model != null) {
                 $loader = new Loader($map, $this);
                 $loader->byModel($model);
-                $rowData = $this->load($loader);
+                $data = $this->load($loader);
+                if (count($data) > 0) {
+                    $rowData = $data[0];
+                } else {
+                    $rowData = [];
+                }
             } else {
                 $rowData = $representModel->row;
             }
