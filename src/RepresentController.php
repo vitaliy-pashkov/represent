@@ -54,9 +54,9 @@ class RepresentController extends Controller
         $post = \Yii::$app->request->post();
         $status = ['status' => 'fail'];
         if (array_key_exists('rows', $post)) {
-            $status = $represent->deleteAll(\Yii::$app->request->post("rows"));
+            $status = $represent->deleteAll(json_decode(\Yii::$app->request->post("rows"), true));
         } elseif (array_key_exists('row', $post)) {
-            $status = $represent->deleteOne(\Yii::$app->request->post("row"));
+            $status = $represent->deleteOne(json_decode(\Yii::$app->request->post("row"), true));
         }
         return $this->createResponse($status);
     }
