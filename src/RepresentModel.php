@@ -164,7 +164,7 @@ class RepresentModel
     {
         foreach ($this->map->fields as $fieldName => $field) {
             if (array_key_exists($fieldName, $this->row)) {
-                if ($this->model->$fieldName != $this->row [ $fieldName ]) {
+                if ($this->model->$fieldName !== $this->row [ $fieldName ]) {
                     $this->model->$fieldName = $this->row [ $fieldName ];
                 }
             }
