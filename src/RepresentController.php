@@ -11,7 +11,7 @@ class RepresentController extends Controller
         $represent = Represent::create($represent);
         $response = [];
         $response['data'] = $represent->getOne();
-        if ($dicts != false) {
+        if (filter_var($dicts,FILTER_VALIDATE_BOOLEAN)) {
             $response['dicts'] = $represent->getDicts();
         }
         return $this->createResponse($response);
@@ -22,13 +22,13 @@ class RepresentController extends Controller
         $represent = Represent::create($represent);
         $response = [];
         $response['data'] = $represent->getAll();
-        if ($count != false) {
+        if (filter_var($count,FILTER_VALIDATE_BOOLEAN)) {
             $response['count'] = $represent->getCount();
         }
-        if ($dicts != false) {
+        if (filter_var($dicts,FILTER_VALIDATE_BOOLEAN)) {
             $response['dicts'] = $represent->getDicts();
         }
-        if ($meta != false) {
+        if (filter_var($meta,FILTER_VALIDATE_BOOLEAN)) {
             $response['meta'] = $represent->getMeta();
         }
         return $this->createResponse($response);

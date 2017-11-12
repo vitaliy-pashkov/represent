@@ -213,7 +213,7 @@ class Represent
             } else {
                 $rowData = $representModel->row;
             }
-            return ["status" => "OK", "row" => $rowData, 'action' => $representModel->action];
+            return ["status" => "OK", "row" => $rowData, "sourceRow"=>$row, 'action' => $representModel->action];
         } catch (RepresentModelException $e) {
             $transaction->rollBack();
             return ["status" => "FAIL", "error" => $e->info()];
@@ -239,7 +239,7 @@ class Represent
             $representModel = new RepresentModel($row, $this->map);
             $representModel->representDelete();
             $transaction->commit();
-            return ["status" => "OK", 'row' => $representModel->minifyRow()];
+            return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow"=>$row];
         } catch (\yii\db\Exception $e) {
             $transaction->rollBack();
             return ["status" => "FAIL", "error" => $e->getMessage()];
