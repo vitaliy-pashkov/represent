@@ -44,10 +44,11 @@ class Map
      * Map constructor.
      * @param array $rawMap
      * @param Represent $represent
+     * @param string $optionsMapName
      * @param Map $parent
      * @param string $relationName
      */
-    function __construct($rawMap, $represent, $parent = null, $relationName = 'root')
+    function __construct($rawMap, $represent, $optionsMapName = 'map', $parent = null, $relationName = 'root')
     {
         $this->represent = $represent;
         $this->relationName = $relationName;
@@ -101,7 +102,7 @@ class Map
         $this->collectRelations($rawMap);
 
         if ($parent == null) {
-            $this->collectOptionMap();
+            $this->collectOptionMap($optionsMapName);
         }
 
         unset($this->model);
@@ -111,7 +112,7 @@ class Map
     {
         foreach ($rawMap as $relationName => $relationRawMap) {
             if (is_string($relationName) && is_array($rawMap) && mb_strpos($relationName, '#') === false) {
-                $relation = new Map($relationRawMap, $this->represent, $this, $relationName);
+                $relation = new Map($relationRawMap, $this->represent, null, $this, $relationName);
                 $this->relations[ $relationName ] = $relation;
                 $this->shortRelations[ $relation->shortName ] = $relationName;
             }
@@ -167,10 +168,14 @@ class Map
         }
     }
 
-    protected function collectOptionMap()
+    /**
+     * @param $optionsMapName
+     * @throws \Exception
+     */
+    protected function collectOptionMap($optionsMapName)
     {
-        if (isset($this->represent->options['map'])) {
-            $optionMap = json_decode($this->represent->options['map'], true);
+        if (isset($this->represent->options[$optionsMapName])) {
+            $optionMap = json_decode($this->represent->options[$optionsMapName], true);
             if (isset($optionMap['filter'])) {
                 $filter = new Filter($optionMap['filter']);
                 $this->where[] = $filter->generateSql();

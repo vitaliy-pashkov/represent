@@ -38,11 +38,13 @@ class Represent
     {
         $this->options = $this->collectOptions($options);
 
-        if ($map === false) {
+        if ($map === false)
+        {
             $map = $this->getMap();
         }
 
-        if ($map !== false) {
+        if ($map !== false)
+        {
             $this->setMap($map);
         }
     }
@@ -50,7 +52,8 @@ class Represent
     public static function create($name, $options = [])
     {
         $className = static::createRepresentClassName($name);
-        if (!class_exists($className)) {
+        if (!class_exists($className))
+        {
             throw new \Exception("Class '$className' not found by represent name '$name'");
         }
         return new $className (false, $options);
@@ -140,7 +143,8 @@ class Represent
         $map->offset = 0;
         $loader = new Loader($map);
         $data = $this->load($loader);
-        if (count($data) > 0) {
+        if (count($data) > 0)
+        {
             return $data[0];
         }
         return null;
@@ -153,7 +157,7 @@ class Represent
     public function getDict($dictName)
     {
         $dictsQuery = $this->getDictMaps();
-        $map = new Map($dictsQuery[ $dictName ], $this);
+        $map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
         $loader = new Loader($map);
         return $this->loadDict($loader, $dictName);
     }
@@ -164,11 +168,13 @@ class Represent
     public function getDicts()
     {
         $dicts = [];
-        foreach ($this->getDictMaps() as $dictName => $dictQueryConfig) {
-            if (isset($dictQueryConfig[ Represent::SINGLETON_FLAG ]) && $dictQueryConfig[ Represent::SINGLETON_FLAG ] === true) {
+        foreach ($this->getDictMaps() as $dictName => $dictQueryConfig)
+        {
+            if (isset($dictQueryConfig[ Represent::SINGLETON_FLAG ]) && $dictQueryConfig[ Represent::SINGLETON_FLAG ] === true)
+            {
                 continue;
             }
-            $map = new Map($dictQueryConfig, $this);
+            $map = new Map($dictQueryConfig, $this, $dictName . '_map');
             $loader = new Loader($map, $this);
             $dicts [ $dictName ] = $this->loadDict($loader, $dictName);
         }
@@ -177,11 +183,12 @@ class Represent
 
     public function saveAll($rows)
     {
-        $status = [];
-        foreach ($rows as $row) {
-            $status[] = $this->saveOne($row);
+        $statuses = [];
+        foreach ($rows as $row)
+        {
+            $statuses[] = $this->saveOne($row);
         }
-        return $status;
+        return $statuses;
     }
 
     /**
@@ -192,38 +199,65 @@ class Represent
     {
         $this->isMapSet();
         $map = clone $this->map;
-        /** @var \yii\db\Transaction $transaction */
-        $transaction = $map->modelClass::getDb()->beginTransaction();
-        try {
+
+        $transaction = null;
+        if($map->modelClass::getDb()->getTransaction() === null)
+        {
+            /** @var \yii\db\Transaction $transaction */
+            $transaction = $map->modelClass::getDb()->beginTransaction();
+        }
+
+        try
+        {
             $row = $this->deprocess($row);
             $representModel = new RepresentModel($row, $map);
             $model = $representModel->representSave();
 
-            $transaction->commit();
+            if($transaction !== null)
+            {
+                $transaction->commit();
+            }
 
-            if ($model != null) {
+            if ($model != null)
+            {
                 $loader = new Loader($map, $this);
                 $loader->byModel($model);
                 $data = $this->load($loader);
-                if (count($data) > 0) {
+                if (count($data) > 0)
+                {
                     $rowData = $data[0];
-                } else {
+                }
+                else
+                {
                     $rowData = [];
                 }
-            } else {
+            }
+            else
+            {
                 $rowData = $representModel->row;
             }
-            return ["status" => "OK", "row" => $rowData, "sourceRow"=>$row, 'action' => $representModel->action];
-        } catch (RepresentModelException $e) {
-            $transaction->rollBack();
-            return ["status" => "FAIL", "error" => $e->info()];
+            return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
+        }
+        catch (\Exception $e)
+        {
+            if($transaction !== null)
+            {
+                $transaction->rollBack();
+            }
+
+            if($e instanceof RepresentModelException)
+            {
+                return ["status" => "FAIL", "error" => $e->info()];
+            }
+            return ["status" => "FAIL", "error" => $e->getMessage()];
         }
     }
 
     public function deleteAll($rows)
     {
         $status = [];
-        foreach ($rows as $row) {
+        foreach ($rows as $row)
+        {
             $status[] = $this->deleteOne($row);
         }
         return $status;
@@ -232,16 +266,31 @@ class Represent
     public function deleteOne($row)
     {
         $this->isMapSet();
-        /** @var \yii\db\Transaction $transaction */
-        $transaction = $this->map->modelClass::getDb()->beginTransaction();
-        try {
+        $transaction = null;
+        if($this->map->modelClass::getDb()->getTransaction() === null)
+        {
+            /** @var \yii\db\Transaction $transaction */
+            $transaction = $this->map->modelClass::getDb()->beginTransaction();
+        }
+        try
+        {
             $row = $this->deprocess($row);
             $representModel = new RepresentModel($row, $this->map);
             $representModel->representDelete();
-            $transaction->commit();
-            return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow"=>$row];
-        } catch (\yii\db\Exception $e) {
-            $transaction->rollBack();
+
+            if($transaction !== null)
+            {
+                $transaction->commit();
+            }
+
+            return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow" => $row];
+        }
+        catch (\yii\db\Exception $e)
+        {
+            if($transaction !== null)
+            {
+                $transaction->rollBack();
+            }
             return ["status" => "FAIL", "error" => $e->getMessage()];
         }
     }
@@ -265,7 +314,8 @@ class Represent
 
     public function isMapSet()
     {
-        if ($this->map === false) {
+        if ($this->map === false)
+        {
             throw new \Exception("Map not set for represent '" . get_class($this) . "'");
         }
     }
@@ -273,12 +323,15 @@ class Represent
 
     private function collectOptions($options)
     {
-        if ($this->collectRequestOptions == true) {
-            if (\Yii::$app instanceof \Yii\web\Application) {
+        if ($this->collectRequestOptions == true)
+        {
+            if (\Yii::$app instanceof \Yii\web\Application)
+            {
                 $options = array_merge(\Yii::$app->request->get(), $options);
                 $options = array_merge(\Yii::$app->request->post(), $options);
             }
-            if (\Yii::$app instanceof \Yii\console\Application) {
+            if (\Yii::$app instanceof \Yii\console\Application)
+            {
                 $options = \Yii::$app->request->getParams();
             }
         }
@@ -318,7 +371,8 @@ class Represent
     private function innerProcessDict($rows, $dictName)
     {
         $functionName = 'process' . ucfirst($dictName);
-        if (method_exists($this, $functionName)) {
+        if (method_exists($this, $functionName))
+        {
             $rows = $this->$functionName($rows);
         }
         return $rows;
@@ -332,14 +386,18 @@ class Represent
     private function collectMeta($loader, $map)
     {
         $meta = [];
-        foreach ($map->fields as $fieldName => $field) {
-            if (!in_array($fieldName, $map->pks)) {
+        foreach ($map->fields as $fieldName => $field)
+        {
+            if (!in_array($fieldName, $map->pks))
+            {
                 $rawMeta = $loader->meta($field);
                 $meta[ $field['fullName'] ] = $this->processMeta($rawMeta, $field['fullAlias']);
             }
         }
-        foreach ($map->relations as $relationName => $relation) {
-            if (!$relation->multiple) {
+        foreach ($map->relations as $relationName => $relation)
+        {
+            if (!$relation->multiple)
+            {
                 $subMeta = $this->collectMeta($loader, $relation);
                 $meta = array_merge($meta, $subMeta);
             }
@@ -351,7 +409,8 @@ class Represent
     private function processMeta($rawMeta, $field)
     {
         $meta = [];
-        foreach ($rawMeta as $item) {
+        foreach ($rawMeta as $item)
+        {
             $meta[] = [
                 "value" => $item[ $field ],
                 "count" => $item['count(*)'],
@@ -369,11 +428,14 @@ class Represent
 
         $nameParts = explode($nameSep, $name);
         $representName = false;
-        if (count($nameParts) == 2) {
+        if (count($nameParts) == 2)
+        {
             array_splice($nameParts, 0, 0, $representNS);
             $name = self::standRepresentName($nameParts);
             $representName = $appNS . $name;
-        } elseif (count($nameParts) == 3) {
+        }
+        elseif (count($nameParts) == 3)
+        {
             array_splice($nameParts, 1, 0, $representNS);
             $name = self::standRepresentName($nameParts);
             $representName = $modulesNS . $name;
@@ -383,11 +445,14 @@ class Represent
 
     protected static function standRepresentName($nameParts)
     {
-        foreach ($nameParts as &$namePart) {
-            if (strpos($namePart, '-')) {
+        foreach ($nameParts as &$namePart)
+        {
+            if (strpos($namePart, '-'))
+            {
                 $namePart = strtolower($namePart);
                 $namePartSubs = explode("-", $namePart);
-                foreach ($namePartSubs as &$part) {
+                foreach ($namePartSubs as &$part)
+                {
                     $part = ucfirst($part);
                 }
                 $namePart = implode($namePartSubs);
