@@ -176,8 +176,8 @@ class Map
     {
         if (isset($this->represent->options[$optionsMapName])) {
             $optionMap = json_decode($this->represent->options[$optionsMapName], true);
-            if (isset($optionMap['filter'])) {
-                $filter = new Filter($optionMap['filter']);
+            if (isset($optionMap['filters'])) {
+                $filter = new Filter($optionMap['filters']);
                 $this->where[] = $filter->generateSql();
             }
             if (isset($optionMap['limit'])) {

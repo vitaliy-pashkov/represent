@@ -135,7 +135,7 @@ class Loader
         /** @var \yii\db\ActiveQuery $query */
         $query = $this->map->modelClass::find();
         $this->combineWhere($query, $this->map->where);
-        $this->combineOrder($query, $this->map->order, true);
+        $this->combineOrder($query, $this->map->order/*, false*/);
         $query->from([$this->map->shortName => $this->map->tableName]);
         $query->joinWith($relationArray);
         $query->select($selectArray);
@@ -195,9 +195,9 @@ class Loader
      * @param mixed $order
      * @param bool $onlyRoot
      */
-    public function combineOrder(&$query, $order, $onlyRoot = false)
+    public function combineOrder(&$query, $order/*, $onlyRoot = false*/)
     {
-        if ($onlyRoot === false) {
+//        if ($onlyRoot === false) {
             if (is_array($order)) {
                 $query->orderBy($this->map->shortArray($order));
             } elseif (is_string($order)) {
@@ -208,34 +208,34 @@ class Loader
                 $order = implode(',', $orderItems);
                 $query->orderBy($order);
             }
-        } else {
-            if (is_array($order)) {
-                $rootOrder = [];
-                foreach ($order as $key => $orderDir) {
-                    if (strpos($key, Represent::RELATION_SEP) === false) {
-                        $rootOrder[ $key ] = $orderDir;
-                    }
-                }
-                $query->orderBy($this->map->shortArray($rootOrder));
-            } elseif (is_string($order)) {
-                $rootOrderItems = [];
-                $orderItems = explode(',', $order);
-                foreach ($orderItems as $orderItem) {
-                    $parts = explode(' ', $orderItem);
-                    $isRoot = false;
-                    foreach ($parts as $part) {
-                        if (strpos($part, Represent::RELATION_SEP) === false && $this->map->isSelectedField($part)) {
-                            $isRoot = true;
-                        }
-                    }
-                    if ($isRoot) {
-                        $rootOrderItems[] = $orderItem;
-                    }
-                }
-                $rootOrder = implode(',', $rootOrderItems);
-                $query->orderBy($this->map->shortString($rootOrder));
-            }
-        }
+//        } else {
+//            if (is_array($order)) {
+//                $rootOrder = [];
+//                foreach ($order as $key => $orderDir) {
+//                    if (strpos($key, Represent::RELATION_SEP) === false) {
+//                        $rootOrder[ $key ] = $orderDir;
+//                    }
+//                }
+//                $query->orderBy($this->map->shortArray($rootOrder));
+//            } elseif (is_string($order)) {
+//                $rootOrderItems = [];
+//                $orderItems = explode(',', $order);
+//                foreach ($orderItems as $orderItem) {
+//                    $parts = explode(' ', $orderItem);
+//                    $isRoot = false;
+//                    foreach ($parts as $part) {
+//                        if (strpos($part, Represent::RELATION_SEP) === false && $this->map->isSelectedField($part)) {
+//                            $isRoot = true;
+//                        }
+//                    }
+//                    if ($isRoot) {
+//                        $rootOrderItems[] = $orderItem;
+//                    }
+//                }
+//                $rootOrder = implode(',', $rootOrderItems);
+//                $query->orderBy($this->map->shortString($rootOrder));
+//            }
+//        }
     }
 
 

@@ -11,6 +11,7 @@ class Filter
 
     public function __construct($filterData)
     {
+//    	print_r($filterData); die;
         $this->name = $filterData['name'];
         $this->rule = $filterData['rule'];
 //		if(!isset($filterData['conditions']))
@@ -35,7 +36,7 @@ class Filter
         $sql = str_replace('&&', 'AND', $sql);
         $sql = str_replace('||', 'OR', $sql);
         $sql = str_replace('!', 'NOT', $sql);
-        $sql = preg_replace('/[^0-9a-zA-Z()_ ]/i', '', $sql);
+        $sql = preg_replace('/[^0-9a-zA-Z()_. ]/i', '', $sql);
 
         if ($sql == '') {
             return 'TRUE';
@@ -50,6 +51,7 @@ class Filter
             }
 //			$sql = str_replace( $condition->name, $condition->generateSql(), $sql );
         }
+	
         $sql = implode(' ', $parts);
         return $sql;
     }
