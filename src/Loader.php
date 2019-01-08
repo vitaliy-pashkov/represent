@@ -185,7 +185,7 @@ class Loader
             if (is_array($condition)) {
                 $query->$glueFunction($this->map->shortArray($condition));
             } elseif (is_string($condition)) {
-                $query->$glueFunction($this->map->shortString($condition));
+                $query->$glueFunction($this->map->shortStringWhere($condition));
             }
         }
     }
