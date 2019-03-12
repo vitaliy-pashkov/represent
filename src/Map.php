@@ -25,6 +25,7 @@ class Map
 	public $via = null;
 	public $relType = '';
 	public $actions = 'r';
+	public $mapBy = null;
 
 	public $fields = [];
 	public $where = [];
@@ -36,10 +37,8 @@ class Map
 	public $shortRelations = [];
 
 	public $parent = null;
-	public $root = null;
 	public $model;
 
-	protected $rawMap;
 	protected $fieldIndex = 1;
 
 	/**
@@ -50,20 +49,10 @@ class Map
 	 * @param Map $parent
 	 * @param string $relationName
 	 */
-	function __construct($rawMap, $represent, $optionsMapName = 'map', $parent = null, $relationName = 'root', $root = null)
+	function __construct($rawMap, $represent, $optionsMapName = 'map', $parent = null, $relationName = 'root')
 		{
-		$this->rawMap = $rawMap;
 		$this->represent = $represent;
 		$this->relationName = $relationName;
-		if ($root == null)
-			{
-			$this->root = $this;
-			}
-		else
-			{
-			$this->root = $root;
-			}
-
 		if ($parent == null)
 			{
 			$this->maxLimit = $this->represent->maxLimit;
@@ -116,19 +105,17 @@ class Map
 		$this->tableName = $this->modelClass::tableName();
 		$this->pks = $this->modelClass::getTableSchema()->primaryKey;
 
+		$this->collectConfig($rawMap);
 		$this->collectFields($rawMap);
 		$this->collectRelations($rawMap);
-		$this->collectConfig($rawMap);
 
 		if ($parent == null)
 			{
 			$this->collectOptionMap($optionsMapName);
-			$this->collectCustomFields($rawMap);
 			}
 
 		unset($this->model);
 		}
-
 
 	protected function collectRelations(&$rawMap)
 		{
@@ -136,7 +123,7 @@ class Map
 			{
 			if (is_string($relationName) && is_array($rawMap) && mb_strpos($relationName, '#') === false)
 				{
-				$relation = new Map($relationRawMap, $this->represent, null, $this, $relationName, $this->root);
+				$relation = new Map($relationRawMap, $this->represent, null, $this, $relationName);
 				$this->relations[ $relationName ] = $relation;
 				$this->shortRelations[ $relation->shortName ] = $relationName;
 				}
@@ -172,6 +159,10 @@ class Map
 					{
 					$this->order = $value;
 					}
+				if($key == "#mapBy")
+					{
+					$this->mapBy = $value;
+					}
 				unset($rawMap[ $key ]);
 				}
 			}
@@ -195,40 +186,16 @@ class Map
 					foreach ($this->model->attributes as $field => $val)
 						{
 						$this->addField($field);
-						unset($rawMap[ $key ]);
 						}
 					}
 				else
 					{
-					if (strpos($value, ' AS ') === false)
-						{
-						$this->addField($value);
-						unset($rawMap[ $key ]);
-						}
+					$this->addField($value);
 					}
+				unset($rawMap[ $key ]);
 				}
 			}
 		}
-
-	protected function collectCustomFields()
-		{
-		foreach ($this->rawMap as $key => $value)
-			{
-			if (is_numeric($key))
-				{
-				if (strpos($value, ' AS ') !== false)
-					{
-					$this->addCustomField($value);
-					unset($this->rawMap[ $key ]);
-					}
-				}
-			}
-		foreach ($this->relations as $relation)
-			{
-			$relation->collectCustomFields();
-			}
-		}
-
 
 	/**
 	 * @param $optionsMapName
@@ -280,6 +247,7 @@ class Map
 				{
 				throw new RepresentQueryException("Field '$field' not found in model $this->modelClass", $this->represent, $field);
 				}
+
 			$short = 'f' . $this->fieldIndex;
 			$this->fields[ $field ] = [
 				"name" => $field,
@@ -287,31 +255,8 @@ class Map
 				"alias" => $this->shortName . Represent::RELATION_SEP . $field,
 				"fullAlias" => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
 				"fullName" => static::appendPath($this->representPath, Represent::RELATION_SEP, $field),
-				"dbAlias" => $this->shortName . Represent::DB_FIELD_SEP . $field,
-				"type" => 'normal',
 			];
 			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $field;
-			$this->fieldIndex++;
-			}
-		}
-
-	protected function addCustomField($field)
-		{
-		if (!array_key_exists($field, $this->fields))
-			{
-			$short = 'f' . $this->fieldIndex;
-			list($field, $aliace) = explode(' AS ', $field);
-			$this->fields[ $aliace ] = [
-				"name" => $aliace,
-				"short" => $short,
-				"alias" => $this->shortString($field, 'dbAlias'),
-				"fullAlias" => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
-				"fullName" => static::appendPath($this->representPath, Represent::RELATION_SEP, $field),
-				'dbAlias' => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
-				"type" => 'custom',
-				"value" => $field,
-			];
-			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $aliace;
 			$this->fieldIndex++;
 			}
 		}
@@ -338,7 +283,7 @@ class Map
 	 * @param string $str
 	 * @return string
 	 */
-	public function shortString($str, $type = 'dbAlias')
+	public function shortString($str)
 		{
 		$parts = explode(' ', $str);
 		foreach ($parts as &$part)
@@ -347,40 +292,7 @@ class Map
 				{
 				list($fullRelationName, $fieldName) = $this->splitField($part);
 				$relation = $this->findRelation($fullRelationName);
-				$part = $relation->fields[$fieldName][$type]; //$relation->shortName . Represent::DB_FIELD_SEP . $fieldName;
-				}
-			else
-				{
-				if ($this->isSelectedField($part))
-					{
-					$part = $this->shortName . Represent::DB_FIELD_SEP . $part;
-					}
-				}
-			}
-		$str = implode(' ', $parts);
-		return $str;
-		}
-
-	public function shortStringWhere($str, $type = 'dbAlias')
-		{
-		$parts = explode(' ', $str);
-		foreach ($parts as &$part)
-			{
-			if (strpos($part, Represent::RELATION_SEP) !== false)
-				{
-				list($fullRelationName, $fieldName) = $this->splitField($part);
-				$relation = $this->findRelation($fullRelationName);
-
-				if($relation->fields[$fieldName]['type'] == 'custom')
-					{
-					$part = $relation->fields[$fieldName]['alias'];
-					}
-				else
-					{
-					$part = $relation->fields[$fieldName][$type];
-					}
-
-				 //$relation->shortName . Represent::DB_FIELD_SEP . $fieldName;
+				$part = $relation->shortName . Represent::DB_FIELD_SEP . $fieldName;
 				}
 			else
 				{
@@ -439,7 +351,7 @@ class Map
 			}
 		if ($map == null)
 			{
-			$map = &$this->root;
+			$map = &$this;
 			}
 
 		if ($key == '')
@@ -456,7 +368,7 @@ class Map
 			{
 			return $this->findRelation($lessParts, $map->relations[ $part ], $fullKey);
 			}
-		throw new RepresentQueryException("Unknown relation $fullKey in " . print_r(array_keys($map->relations), true), $this->represent, $fullKey);
+		throw new RepresentQueryException("Unknown relation $fullKey", $this->represent, $fullKey);
 		}
 
 	/**

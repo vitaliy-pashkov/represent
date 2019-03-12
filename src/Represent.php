@@ -10,7 +10,7 @@ class Represent
     const YII_AR_RELATION_SEP = '.';
     const DB_FIELD_SEP = '.';
 
-    const ALIAS_FIELD_SEP = '__';
+    const ALIAS_FIELD_SEP = '-';
     const ALIAS_TABLE_SEP = '_';
 
     const DELETE_FLAG = '#delete';
@@ -127,7 +127,7 @@ class Represent
     public function getAll()
     {
         $this->isMapSet();
-        $loader = new Loader($this->map);
+        $loader = new Loader($this->map, $this);
         $data = $this->load($loader);
         return $data;
     }
@@ -141,7 +141,7 @@ class Represent
         $map = clone $this->map;
         $map->limit = 1;
         $map->offset = 0;
-        $loader = new Loader($map);
+        $loader = new Loader($map, $this);
         $data = $this->load($loader);
         if (count($data) > 0)
         {
@@ -236,7 +236,6 @@ class Represent
             {
                 $rowData = $representModel->row;
             }
-			$this->afterSave($rowData, $row, $representModel->action);
             return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
         }
         catch (\Exception $e)
@@ -275,7 +274,6 @@ class Represent
         }
         try
         {
-        	$this->beforeDelete($row);
             $row = $this->deprocess($row);
             $representModel = new RepresentModel($row, $this->map);
             $representModel->representDelete();
@@ -284,7 +282,7 @@ class Represent
             {
                 $transaction->commit();
             }
-			$this->afterDelete($representModel->minifyRow(), $row, 'delete');
+
             return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow" => $row];
         }
         catch (\yii\db\Exception $e)
@@ -296,26 +294,6 @@ class Represent
             return ["status" => "FAIL", "error" => $e->getMessage()];
         }
     }
-
-	public function afterSave($row, $sourceRow, $action)
-		{
-		$this->afterModify($row, $sourceRow, $action, 'save');
-		}
-
-	public function beforeDelete($sourceRow)
-		{
-		}
-
-	public function afterDelete($row, $sourceRow, $action)
-		{
-		$this->afterModify($row, $sourceRow, $action, 'delete');
-		}
-
-	public function afterModify($row, $sourceRow, $action, $generalAction)
-		{
-
-		}
-
 
     public function getCount()
     {
@@ -440,6 +418,11 @@ class Represent
         }
         return $meta;
     }
+
+	public function processSql($sql)
+		{
+		return $sql;
+		}
 
     protected static function createRepresentClassName($name)
     {

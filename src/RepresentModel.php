@@ -6,242 +6,282 @@ namespace vpashkov\represent;
 use yii\db\ActiveRecord;
 
 class RepresentModel
-{
-    public $action;
+	{
+	public $action;
 
-    /** @var RepresentModel[] $deleteQueue */
-    public $deleteQueue = [];
+	/** @var RepresentModel[] $deleteQueue */
+	public $deleteQueue = [];
 
-    public $row;
-    /** @var Map $map */
-    private $map;
-    /** @var ActiveRecord $model */
-    private $model;
+	public $row;
+	/** @var Map $map */
+	private $map;
+	/** @var ActiveRecord $model */
+	private $model;
 
-    function __construct($row, $map)
-    {
-        $this->row = $row;
-        $this->map = $map;
-        $this->model = $this->findModel();
-    }
+	function __construct($row, $map)
+		{
+		$this->row = $row;
+		$this->map = $map;
+		$this->model = $this->findModel();
+		}
 
-    /**
-     * @return ActiveRecord
-     */
-    protected function findModel()
-    {
-        $whereCondition = [];
-        foreach ($this->map->pks as $key) {
-            if (!array_key_exists($key, $this->row)) {
-                $this->row[ $key ] = null;
-            }
-            $whereCondition[ $key ] = $this->row[ $key ];
-        }
+	/**
+	 * @return ActiveRecord
+	 */
+	protected function findModel()
+		{
+		$whereCondition = [];
+		foreach ($this->map->pks as $key)
+			{
+			if (!array_key_exists($key, $this->row))
+				{
+				$this->row[ $key ] = null;
+				}
+			$whereCondition[ $key ] = $this->row[ $key ];
+			}
 
-        $model = $this->map->modelClass::find()->where($whereCondition)->one();
-        if ($model == null) {
-            $model = new $this->map->modelClass();
-        }
-        return $model;
-    }
+		$model = $this->map->modelClass::find()->where($whereCondition)->one();
+		if ($model == null)
+			{
+			$model = new $this->map->modelClass();
+			}
+		return $model;
+		}
 
-    /**
-     * @param RepresentModel $parent
-     * @return ActiveRecord
-     * @throws RepresentModelException
-     */
-    public function representSave($parent = null)
-    {
-        if (array_key_exists(Represent::DELETE_FLAG, $this->row) && $this->row[ Represent::DELETE_FLAG ] != false) {
-            if ($parent == null) {
-                $this->representDelete();
-            } else {
-                $parent->deleteQueue [] = $this;
-            }
-            $this->action = 'd';
-            return null;
-        }
+	/**
+	 * @param RepresentModel $parent
+	 * @return ActiveRecord
+	 * @throws RepresentModelException
+	 */
+	public function representSave($parent = null)
+		{
+		if (array_key_exists(Represent::DELETE_FLAG, $this->row) && $this->row[ Represent::DELETE_FLAG ] != false)
+			{
+			if ($parent == null)
+				{
+				$this->representDelete();
+				}
+			else
+				{
+				$parent->deleteQueue [] = $this;
+				}
+			$this->action = 'd';
+			return null;
+			}
 
-        $this->setAttributes();
+		$this->setAttributes();
 
-        $this->saveRelations('parent');
+		$this->saveRelations('parent');
 
-        $this->action = $this->model->getIsNewRecord() ? 'c' : 'u';
-        if (static::checkRights($this->action, $this->map->actions)) {
-            if (!$this->model->save()) {
-                throw new RepresentModelException($this->model, $this->model->getErrors(), $this->row);
-            }
-        }
+		$this->action = $this->model->getIsNewRecord() ? 'c' : 'u';
+		if (static::checkRights($this->action, $this->map->actions))
+			{
+			if (!$this->model->save())
+				{
+				throw new RepresentModelException($this->model, $this->model->getErrors(), $this->row);
+				}
+			}
 
-        static::saveRelations('depend');
-        static::saveRelations('via');
+		static::saveRelations('depend');
+		static::saveRelations('via');
 
-        foreach ($this->deleteQueue as $representModel) {
-            if ($representModel->map->via != null) {
-                $this->model->unlink($representModel->map->relationName, $representModel->model, true);
-            }
-            $representModel->representDelete();
-        }
+		foreach ($this->deleteQueue as $representModel)
+			{
+			if ($representModel->map->via != null)
+				{
+				$this->model->unlink($representModel->map->relationName, $representModel->model, true);
+				}
+			$representModel->representDelete();
+			}
 
-        return $this->model;
-    }
+		return $this->model;
+		}
 
-    /**
-     * @param string $relType
-     */
-    protected function saveRelations($relType)
-    {
-        foreach ($this->map->relations as $relationName => $relation) {
-            if ($relation->relType == $relType) {
-                if (array_key_exists($relationName, $this->row) && $this->row[ $relationName ] != null) {
-                    if ($relation->multiple) {
-                        foreach ($this->row[ $relationName ] as $item) {
-                            $this->saveRelationModel($item, $relation);
-                        }
-                    } else {
-                        $this->saveRelationModel($this->row[ $relationName ], $relation);
-                    }
-                }
-            }
-        }
-    }
+	/**
+	 * @param string $relType
+	 */
+	protected function saveRelations($relType)
+		{
+		foreach ($this->map->relations as $relationName => $relation)
+			{
+			if ($relation->relType == $relType)
+				{
+				if (array_key_exists($relationName, $this->row) && $this->row[ $relationName ] != null)
+					{
+					if ($relation->multiple)
+						{
+						foreach ($this->row[ $relationName ] as $item)
+							{
+							$this->saveRelationModel($item, $relation);
+							}
+						}
+					else
+						{
+						$this->saveRelationModel($this->row[ $relationName ], $relation);
+						}
+					}
+				}
+			}
+		}
 
-    /**
-     * @param array $relationRow
-     * @param Map $relation
-     */
-    protected function saveRelationModel($relationRow, $relation)
-    {
-        if ($relation->relType == 'depend') {
-            foreach ($relation->link as $thisKey => $parentKey) {
-                $relationRow[ $thisKey ] = $this->model->$parentKey;
-            }
-        }
+	/**
+	 * @param array $relationRow
+	 * @param Map $relation
+	 */
+	protected function saveRelationModel($relationRow, $relation)
+		{
+		if ($relation->relType == 'depend')
+			{
+			foreach ($relation->link as $thisKey => $parentKey)
+				{
+				$relationRow[ $thisKey ] = $this->model->$parentKey;
+				}
+			}
 
-        $relatedRepresentModel = new RepresentModel($relationRow, $relation);
-        $relatedModel = $relatedRepresentModel->representSave($this);
+		$relatedRepresentModel = new RepresentModel($relationRow, $relation);
+		$relatedModel = $relatedRepresentModel->representSave($this);
 
-        if ($relatedModel == null) {
-            return;
-        }
+		if ($relatedModel == null)
+			{
+			return;
+			}
 
-        if ($relation->relType == 'parent') {
-            foreach ($relation->link as $thisKey => $parentKey) {
-                $this->model->$parentKey = $relatedModel->$thisKey;
-            }
-        }
-        if ($relation->relType == 'via') {
-            if (!$this->isLinked($relatedModel, $relation)) {
-                $this->model->link($relation->relationName, $relatedModel);
-            }
-        }
+		if ($relation->relType == 'parent')
+			{
+			foreach ($relation->link as $thisKey => $parentKey)
+				{
+				$this->model->$parentKey = $relatedModel->$thisKey;
+				}
+			}
+		if ($relation->relType == 'via')
+			{
+			if (!$this->isLinked($relatedModel, $relation))
+				{
+				$this->model->link($relation->relationName, $relatedModel);
+				}
+			}
 
-        if (array_key_exists(Represent::UNLINK_FLAG, $relationRow) && $relationRow[ Represent::UNLINK_FLAG ] != false) {
-            $delete = $relation->via != null ? true : false;
-            $this->model->unlink($relation->relationName, $relatedModel, $delete);
-        }
-    }
+		if (array_key_exists(Represent::UNLINK_FLAG, $relationRow) && $relationRow[ Represent::UNLINK_FLAG ] != false)
+			{
+			$delete = $relation->via != null ? true : false;
+			$this->model->unlink($relation->relationName, $relatedModel, $delete);
+			}
+		}
 
-    /**
-     * @param ActiveRecord $model
-     * @param Map $relation
-     * @return bool
-     */
-    public function isLinked($model, $relation)
-    {
-        $where = [];
-        foreach ($relation->pks as $key) {
-            $where[ $key ] = $model->$key;
-        }
-        $result = $this->model->getRelation($relation->relationName)->where($where)->one();
-        return $result !== null;
-    }
+	/**
+	 * @param ActiveRecord $model
+	 * @param Map $relation
+	 * @return bool
+	 */
+	public function isLinked($model, $relation)
+		{
+		$where = [];
+		foreach ($relation->pks as $key)
+			{
+			$where[ $key ] = $model->$key;
+			}
+		$result = $this->model->getRelation($relation->relationName)->where($where)->one();
+		return $result !== null;
+		}
 
-    /**
-     *
-     */
-    protected function setAttributes()
-    {
-        foreach ($this->map->fields as $fieldName => $field) {
-            if (array_key_exists($fieldName, $this->row)) {
-                if ($this->model->$fieldName !== $this->row [ $fieldName ]) {
-                    $this->model->$fieldName = $this->row [ $fieldName ];
-                }
-            }
-        }
-    }
+	/**
+	 *
+	 */
+	protected function setAttributes()
+		{
+		foreach ($this->map->fields as $fieldName => $field)
+			{
+			if (array_key_exists($fieldName, $this->row))
+				{
+				if ($this->model->$fieldName !== $this->row [ $fieldName ])
+					{
+					$this->model->$fieldName = $this->row [ $fieldName ];
+					}
+				}
+			}
+		}
 
-    /**
-     *
-     */
-    public function representDelete()
-    {
-        if ($this->model->isNewRecord === false) {
-            $this->representDeleteWithRelations($this->model, $this->map);
-        }
-    }
+	/**
+	 *
+	 */
+	public function representDelete()
+		{
+		if ($this->model->isNewRecord === false)
+			{
+			$this->representDeleteWithRelations($this->model, $this->map);
+			}
+		}
 
-    /**
-     * @param ActiveRecord $model
-     * @param Map $map
-     */
-    protected function representDeleteWithRelations($model, $map)
-    {
-        if (!static::checkRights("d", $map->actions)) {
-            return;
-        }
+	/**
+	 * @param ActiveRecord $model
+	 * @param Map $map
+	 */
+	protected function representDeleteWithRelations($model, $map)
+		{
+		if (!static::checkRights("d", $map->actions))
+			{
+			return;
+			}
 
-        $this->deleteRelations($model, $map, 'depend');
-        $this->deleteRelations($model, $map, 'via');
+		$this->deleteRelations($model, $map, 'depend');
+		$this->deleteRelations($model, $map, 'via');
 
-        $model->delete();
+		$model->delete();
 
-        $this->deleteRelations($model, $map, 'parent');
-    }
+		$this->deleteRelations($model, $map, 'parent');
+		}
 
-    /**
-     * @param ActiveRecord $model
-     * @param Map $map
-     * @param string $relType
-     */
-    private function deleteRelations($model, $map, $relType)
-    {
-        foreach ($map->relations as $relationName => $relation) {
-            if (static::checkRights("d", $relation->actions) && $relation->relType == $relType) {
-                if ($relation->multiple) {
-                    /** @var ActiveRecord[] $relModels */
-                    $relModels = $model->$relationName;
-                    foreach ($relModels as $relModel) {
-                        $this->representDeleteWithRelations($relModel, $relation);
-                    }
-                } else {
-                    /** @var ActiveRecord $relModel */
-                    $relModel = $model->$relationName;
-                    if ($relModel != null) {
-                        $this->representDeleteWithRelations($relModel, $relation);
-                    }
-                }
-            }
-        }
-    }
+	/**
+	 * @param ActiveRecord $model
+	 * @param Map $map
+	 * @param string $relType
+	 */
+	private function deleteRelations($model, $map, $relType)
+		{
+		foreach ($map->relations as $relationName => $relation)
+			{
+			if (static::checkRights("d", $relation->actions) && $relation->relType == $relType)
+				{
+				if ($relation->multiple)
+					{
+					/** @var ActiveRecord[] $relModels */
+					$relModels = $model->$relationName;
+					foreach ($relModels as $relModel)
+						{
+						$this->representDeleteWithRelations($relModel, $relation);
+						}
+					}
+				else
+					{
+					/** @var ActiveRecord $relModel */
+					$relModel = $model->$relationName;
+					if ($relModel != null)
+						{
+						$this->representDeleteWithRelations($relModel, $relation);
+						}
+					}
+				}
+			}
+		}
 
-    public function minifyRow()
-    {
-        $row = [];
-        foreach ($this->map->pks as $pk) {
-            $row[ $pk ] = $this->row[ $pk ];
-        }
-        return $row;
-    }
+	public function minifyRow()
+		{
+		$row = [];
+		foreach ($this->map->pks as $pk)
+			{
+			$row[ $pk ] = $this->row[ $pk ];
+			}
+		return $row;
+		}
 
 
-    /**
-     * @param string $action
-     * @param string $actions
-     * @return bool
-     */
-    public static function checkRights($action, $actions)
-    {
-        return strpos($actions, $action) === false ? false : true;
-    }
-}
+	/**
+	 * @param string $action
+	 * @param string $actions
+	 * @return bool
+	 */
+	public static function checkRights($action, $actions)
+		{
+		return strpos($actions, $action) === false ? false : true;
+		}
+	}
