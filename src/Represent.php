@@ -126,6 +126,7 @@ class Represent
 	 */
 	public function getAll()
 		{
+		$this->beforeGetAll();
 		$this->isMapSet();
 		$loader = new Loader($this->map, $this);
 		$data = $this->load($loader);
@@ -137,6 +138,7 @@ class Represent
 	 */
 	public function getOne()
 		{
+		$this->beforeGetOne();
 		$this->isMapSet();
 		$map = clone $this->map;
 		$map->limit = 1;
@@ -156,6 +158,7 @@ class Represent
 	 */
 	public function getDict($dictName)
 		{
+		$this->beforeGetDict();
 		$dictsQuery = $this->getDictMaps();
 		$map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
 		$loader = new Loader($map);
@@ -167,6 +170,7 @@ class Represent
 	 */
 	public function getDicts()
 		{
+		$this->beforeGetDicts();
 		$dicts = [];
 		foreach ($this->getDictMaps() as $dictName => $dictQueryConfig)
 			{
@@ -295,6 +299,22 @@ class Represent
 				}
 			return ["status" => "FAIL", "error" => $e->getMessage()];
 			}
+		}
+
+	public function beforeGetAll()
+		{
+		}
+
+	public function beforeGetOne()
+		{
+		}
+
+	public function beforeGetDict()
+		{
+		}
+
+	public function beforeGetDicts()
+		{
 		}
 
 	public function afterSave($row, $sourceRow, $action)
