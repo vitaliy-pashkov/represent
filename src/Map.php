@@ -108,7 +108,6 @@ class Map
 		$this->collectConfig($rawMap);
 		$this->collectFields($rawMap);
 		$this->collectRelations($rawMap);
-
 		if ($parent == null)
 			{
 			$this->collectOptionMap($optionsMapName);
@@ -203,7 +202,7 @@ class Map
 	 */
 	protected function collectOptionMap($optionsMapName)
 		{
-		if (isset($this->represent->options[ $optionsMapName ]))
+		if (array_key_exists($optionsMapName, $this->represent->options))
 			{
 			$optionMap = json_decode($this->represent->options[ $optionsMapName ], true);
 			if (isset($optionMap['filters']))

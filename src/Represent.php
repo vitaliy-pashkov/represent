@@ -5,467 +5,488 @@ namespace vpashkov\represent;
 use yii\db\Exception;
 
 class Represent
-{
-    const RELATION_SEP = '.';
-    const YII_AR_RELATION_SEP = '.';
-    const DB_FIELD_SEP = '.';
+	{
+	const RELATION_SEP = '.';
+	const YII_AR_RELATION_SEP = '.';
+	const DB_FIELD_SEP = '.';
 
-    const ALIAS_FIELD_SEP = '-';
-    const ALIAS_TABLE_SEP = '_';
+	const ALIAS_FIELD_SEP = '-';
+	const ALIAS_TABLE_SEP = '_';
 
-    const DELETE_FLAG = '#delete';
-    const UNLINK_FLAG = '#unlink';
-    const SINGLETON_FLAG = '#singleton';
+	const DELETE_FLAG = '#delete';
+	const UNLINK_FLAG = '#unlink';
+	const SINGLETON_FLAG = '#singleton';
 
-    const REPRESENT_NS = 'represents';
-    const APP_NS = '\\app\\';
-    const MODULES_NS = '\\app\\modules\\';
-    const NAME_SEP = '/';
+	const REPRESENT_NS = 'represents';
+	const APP_NS = '\\app\\';
+	const MODULES_NS = '\\app\\modules\\';
+	const NAME_SEP = '/';
 
-    public $maxLimit = 1000000;
+	public $maxLimit = 1000000;
 
-    public $options = [];
-    public $relationIndex;
-    public $collectRequestOptions = true;
-    public $rawMap;
-
-
-    /** @var bool|Map $map */
-    private $map = false;
+	public $options = [];
+	public $relationIndex;
+	public $collectRequestOptions = true;
+	public $rawMap;
 
 
-    public function __construct($map = false, $options = [])
-    {
-        $this->options = $this->collectOptions($options);
-
-        if ($map === false)
-        {
-            $map = $this->getMap();
-        }
-
-        if ($map !== false)
-        {
-            $this->setMap($map);
-        }
-    }
-
-    public static function create($name, $options = [])
-    {
-        $className = static::createRepresentClassName($name);
-        if (!class_exists($className))
-        {
-            throw new \Exception("Class '$className' not found by represent name '$name'");
-        }
-        return new $className (false, $options);
-    }
-
-    /**
-     * @return array
-     */
-    protected function getDefaultOptions()
-    {
-        return [];
-    }
-
-    /**
-     * @return false|array
-     */
-    protected function getMap()
-    {
-        return false;
-    }
-
-    /**
-     * @return array
-     */
-    protected function getDictMaps()
-    {
-        return [];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getWidgetConfig()
-    {
-        return [];
-    }
-
-    /**
-     * @param array $rows
-     * @return mixed
-     */
-    protected function process($rows)
-    {
-        return $rows;
-    }
-
-    /**
-     * @param array $row
-     * @return mixed
-     */
-    protected function deprocess($row)
-    {
-        return $row;
-    }
+	/** @var bool|Map $map */
+	private $map = false;
 
 
-    /**
-     * @param array $map
-     * @return $this
-     */
-    public function setMap($map)
-    {
-        $this->rawMap = $map;
-        $this->map = new Map($this->rawMap, $this);
-        return $this;
-    }
+	public function __construct($map = false, $options = [])
+		{
+		$this->options = $this->collectOptions($options);
 
-    /**
-     * @return mixed
-     */
-    public function getAll()
-    {
-        $this->isMapSet();
-        $loader = new Loader($this->map, $this);
-        $data = $this->load($loader);
-        return $data;
-    }
+		if ($map === false)
+			{
+			$map = $this->getMap();
+			}
 
-    /**
-     * @return mixed|null
-     */
-    public function getOne()
-    {
-        $this->isMapSet();
-        $map = clone $this->map;
-        $map->limit = 1;
-        $map->offset = 0;
-        $loader = new Loader($map, $this);
-        $data = $this->load($loader);
-        if (count($data) > 0)
-        {
-            return $data[0];
-        }
-        return null;
-    }
+		if ($map !== false)
+			{
+			$this->setMap($map);
+			}
+		}
 
-    /**
-     * @param string $dictName
-     * @return mixed
-     */
-    public function getDict($dictName)
-    {
-        $dictsQuery = $this->getDictMaps();
-        $map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
-        $loader = new Loader($map);
-        return $this->loadDict($loader, $dictName);
-    }
+	public static function create($name, $options = [])
+		{
+		$className = static::createRepresentClassName($name);
+		if (!class_exists($className))
+			{
+			throw new \Exception("Class '$className' not found by represent name '$name'");
+			}
+		return new $className (false, $options);
+		}
 
-    /**
-     * @return array
-     */
-    public function getDicts()
-    {
-        $dicts = [];
-        foreach ($this->getDictMaps() as $dictName => $dictQueryConfig)
-        {
-            if (isset($dictQueryConfig[ Represent::SINGLETON_FLAG ]) && $dictQueryConfig[ Represent::SINGLETON_FLAG ] === true)
-            {
-                continue;
-            }
-            $map = new Map($dictQueryConfig, $this, $dictName . '_map');
-            $loader = new Loader($map, $this);
-            $dicts [ $dictName ] = $this->loadDict($loader, $dictName);
-        }
-        return $dicts;
-    }
+	/**
+	 * @return array
+	 */
+	protected function getDefaultOptions()
+		{
+		return [];
+		}
 
-    public function saveAll($rows)
-    {
-        $statuses = [];
-        foreach ($rows as $row)
-        {
-            $statuses[] = $this->saveOne($row);
-        }
-        return $statuses;
-    }
+	/**
+	 * @return false|array
+	 */
+	protected function getMap()
+		{
+		return false;
+		}
 
-    /**
-     * @param $row
-     * @return array
-     */
-    public function saveOne($row)
-    {
-        $this->isMapSet();
-        $map = clone $this->map;
+	/**
+	 * @return array
+	 */
+	protected function getDictMaps()
+		{
+		return [];
+		}
 
-        $transaction = null;
-        if($map->modelClass::getDb()->getTransaction() === null)
-        {
-            /** @var \yii\db\Transaction $transaction */
-            $transaction = $map->modelClass::getDb()->beginTransaction();
-        }
+	/**
+	 * @return array
+	 */
+	protected function getWidgetConfig()
+		{
+		return [];
+		}
 
-        try
-        {
-            $row = $this->deprocess($row);
-            $representModel = new RepresentModel($row, $map);
-            $model = $representModel->representSave();
+	/**
+	 * @param array $rows
+	 * @return mixed
+	 */
+	protected function process($rows)
+		{
+		return $rows;
+		}
 
-            if($transaction !== null)
-            {
-                $transaction->commit();
-            }
-
-            if ($model != null)
-            {
-                $loader = new Loader($map, $this);
-                $loader->byModel($model);
-                $data = $this->load($loader);
-                if (count($data) > 0)
-                {
-                    $rowData = $data[0];
-                }
-                else
-                {
-                    $rowData = [];
-                }
-            }
-            else
-            {
-                $rowData = $representModel->row;
-            }
-            return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
-        }
-        catch (\Exception $e)
-        {
-            if($transaction !== null)
-            {
-                $transaction->rollBack();
-            }
-
-            if($e instanceof RepresentModelException)
-            {
-                return ["status" => "FAIL", "error" => $e->info()];
-            }
-            return ["status" => "FAIL", "error" => $e->getMessage()];
-        }
-    }
-
-    public function deleteAll($rows)
-    {
-        $status = [];
-        foreach ($rows as $row)
-        {
-            $status[] = $this->deleteOne($row);
-        }
-        return $status;
-    }
-
-    public function deleteOne($row)
-    {
-        $this->isMapSet();
-        $transaction = null;
-        if($this->map->modelClass::getDb()->getTransaction() === null)
-        {
-            /** @var \yii\db\Transaction $transaction */
-            $transaction = $this->map->modelClass::getDb()->beginTransaction();
-        }
-        try
-        {
-            $row = $this->deprocess($row);
-            $representModel = new RepresentModel($row, $this->map);
-            $representModel->representDelete();
-
-            if($transaction !== null)
-            {
-                $transaction->commit();
-            }
-
-            return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow" => $row];
-        }
-        catch (\yii\db\Exception $e)
-        {
-            if($transaction !== null)
-            {
-                $transaction->rollBack();
-            }
-            return ["status" => "FAIL", "error" => $e->getMessage()];
-        }
-    }
-
-    public function getCount()
-    {
-        $this->isMapSet();
-        $loader = new Loader($this->map, $this);
-        $rawCount = $loader->count();
-        return $rawCount[0]['count(*)'];
-    }
-
-    public function getMeta()
-    {
-        $this->isMapSet();
-        $loader = new Loader($this->map, $this);
-        $meta = $this->collectMeta($loader, $this->map);
-        return $meta;
-    }
+	/**
+	 * @param array $row
+	 * @return mixed
+	 */
+	protected function deprocess($row)
+		{
+		return $row;
+		}
 
 
-    public function isMapSet()
-    {
-        if ($this->map === false)
-        {
-            throw new \Exception("Map not set for represent '" . get_class($this) . "'");
-        }
-    }
+	/**
+	 * @param array $map
+	 * @return $this
+	 */
+	public function setMap($map)
+		{
+		$this->rawMap = $map;
+		$this->map = new Map($this->rawMap, $this);
+		return $this;
+		}
+
+	/**
+	 * @return mixed
+	 */
+	public function getAll()
+		{
+		$this->isMapSet();
+		$loader = new Loader($this->map, $this);
+		$data = $this->load($loader);
+		return $data;
+		}
+
+	/**
+	 * @return mixed|null
+	 */
+	public function getOne()
+		{
+		$this->isMapSet();
+		$map = clone $this->map;
+		$map->limit = 1;
+		$map->offset = 0;
+		$loader = new Loader($map, $this);
+		$data = $this->load($loader);
+		if (count($data) > 0)
+			{
+			return $data[0];
+			}
+		return null;
+		}
+
+	/**
+	 * @param string $dictName
+	 * @return mixed
+	 */
+	public function getDict($dictName)
+		{
+		$dictsQuery = $this->getDictMaps();
+		$map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
+		$loader = new Loader($map);
+		return $this->loadDict($loader, $dictName);
+		}
+
+	/**
+	 * @return array
+	 */
+	public function getDicts()
+		{
+		$dicts = [];
+		foreach ($this->getDictMaps() as $dictName => $dictQueryConfig)
+			{
+			if (isset($dictQueryConfig[ Represent::SINGLETON_FLAG ]) && $dictQueryConfig[ Represent::SINGLETON_FLAG ] === true)
+				{
+				continue;
+				}
+			$map = new Map($dictQueryConfig, $this, $dictName . '_map');
+			$loader = new Loader($map, $this);
+			$dicts [ $dictName ] = $this->loadDict($loader, $dictName);
+			}
+		return $dicts;
+		}
+
+	public function saveAll($rows)
+		{
+		$statuses = [];
+		foreach ($rows as $row)
+			{
+			$statuses[] = $this->saveOne($row);
+			}
+		return $statuses;
+		}
+
+	/**
+	 * @param $row
+	 * @return array
+	 */
+	public function saveOne($row)
+		{
+		$this->isMapSet();
+		$map = clone $this->map;
+
+		$transaction = null;
+		if ($map->modelClass::getDb()->getTransaction() === null)
+			{
+			/** @var \yii\db\Transaction $transaction */
+			$transaction = $map->modelClass::getDb()->beginTransaction();
+			}
+
+		try
+			{
+			$row = $this->deprocess($row);
+			$representModel = new RepresentModel($row, $map);
+			$model = $representModel->representSave();
+
+			if ($transaction !== null)
+				{
+				$transaction->commit();
+				}
+
+			if ($model != null)
+				{
+				$loader = new Loader($map, $this);
+				$loader->byModel($model);
+				$data = $this->load($loader);
+				if (count($data) > 0)
+					{
+					$rowData = $data[0];
+					}
+				else
+					{
+					$rowData = [];
+					}
+				}
+			else
+				{
+				$rowData = $representModel->row;
+				}
+			$this->afterSave($rowData, $row, $representModel->action);
+			return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
+			}
+		catch (\Exception $e)
+			{
+			if ($transaction !== null)
+				{
+				$transaction->rollBack();
+				}
+
+			if ($e instanceof RepresentModelException)
+				{
+				return ["status" => "FAIL", "error" => $e->info()];
+				}
+			return ["status" => "FAIL", "error" => $e->getMessage()];
+			}
+		}
+
+	public function deleteAll($rows)
+		{
+		$status = [];
+		foreach ($rows as $row)
+			{
+			$status[] = $this->deleteOne($row);
+			}
+		return $status;
+		}
+
+	public function deleteOne($row)
+		{
+		$this->isMapSet();
+		$transaction = null;
+		if ($this->map->modelClass::getDb()->getTransaction() === null)
+			{
+			/** @var \yii\db\Transaction $transaction */
+			$transaction = $this->map->modelClass::getDb()->beginTransaction();
+			}
+		try
+			{
+			$this->beforeDelete($row);
+			$row = $this->deprocess($row);
+			$representModel = new RepresentModel($row, $this->map);
+			$representModel->representDelete();
+
+			if ($transaction !== null)
+				{
+				$transaction->commit();
+				}
+			$this->afterDelete($representModel->minifyRow(), $row, 'delete');
+			return ["status" => "OK", 'row' => $representModel->minifyRow(), "sourceRow" => $row];
+			}
+		catch (\yii\db\Exception $e)
+			{
+			if ($transaction !== null)
+				{
+				$transaction->rollBack();
+				}
+			return ["status" => "FAIL", "error" => $e->getMessage()];
+			}
+		}
+
+	public function afterSave($row, $sourceRow, $action)
+		{
+		$this->afterModify($row, $sourceRow, $action, 'save');
+		}
+
+	public function beforeDelete($sourceRow)
+		{
+		}
+
+	public function afterDelete($row, $sourceRow, $action)
+		{
+		$this->afterModify($row, $sourceRow, $action, 'delete');
+		}
+
+	public function afterModify($row, $sourceRow, $action, $generalAction)
+		{
+
+		}
+
+	public function getCount()
+		{
+		$this->isMapSet();
+		$loader = new Loader($this->map, $this);
+		$rawCount = $loader->count();
+		return $rawCount[0]['count(*)'];
+		}
+
+	public function getMeta()
+		{
+		$this->isMapSet();
+		$loader = new Loader($this->map, $this);
+		$meta = $this->collectMeta($loader, $this->map);
+		return $meta;
+		}
 
 
-    private function collectOptions($options)
-    {
-        if ($this->collectRequestOptions == true)
-        {
-            if (\Yii::$app instanceof \Yii\web\Application)
-            {
-                $options = array_merge(\Yii::$app->request->get(), $options);
-                $options = array_merge(\Yii::$app->request->post(), $options);
-            }
-            if (\Yii::$app instanceof \Yii\console\Application)
-            {
-                $options = \Yii::$app->request->getParams();
-            }
-        }
-        $options = array_merge($this->getDefaultOptions(), $options);
-        return $options;
-    }
+	public function isMapSet()
+		{
+		if ($this->map === false)
+			{
+			throw new \Exception("Map not set for represent '" . get_class($this) . "'");
+			}
+		}
 
-    /**
-     * @param Loader $loader
-     * @return mixed
-     */
-    private function load($loader)
-    {
-        $data = $loader->all();
-        $data = $this->innerProcess($data);
-        return $data;
-    }
 
-    private function innerProcess($rows)
-    {
-        $rows = $this->process($rows);
-        return $rows;
-    }
+	private function collectOptions($options)
+		{
+		if ($this->collectRequestOptions == true)
+			{
+			if (\Yii::$app instanceof \Yii\web\Application)
+				{
+				$options = array_merge(\Yii::$app->request->get(), $options);
+				$options = array_merge(\Yii::$app->request->post(), $options);
+				}
+			if (\Yii::$app instanceof \Yii\console\Application)
+				{
+				$options = \Yii::$app->request->getParams();
+				}
+			}
+		$options = array_merge($this->getDefaultOptions(), $options);
+		return $options;
+		}
 
-    /**
-     * @param Loader $loader
-     * @param string $dictName
-     * @return mixed
-     */
-    private function loadDict($loader, $dictName)
-    {
-        $data = $loader->all();
-        $data = $this->innerProcessDict($data, $dictName);
-        return $data;
-    }
+	/**
+	 * @param Loader $loader
+	 * @return mixed
+	 */
+	private function load($loader)
+		{
+		$data = $loader->all();
+		$data = $this->innerProcess($data);
+		return $data;
+		}
 
-    private function innerProcessDict($rows, $dictName)
-    {
-        $functionName = 'process' . ucfirst($dictName);
-        if (method_exists($this, $functionName))
-        {
-            $rows = $this->$functionName($rows);
-        }
-        return $rows;
-    }
+	private function innerProcess($rows)
+		{
+		$rows = $this->process($rows);
+		return $rows;
+		}
 
-    /**
-     * @param Loader $loader
-     * @param Map $map
-     * @return array
-     */
-    private function collectMeta($loader, $map)
-    {
-        $meta = [];
-        foreach ($map->fields as $fieldName => $field)
-        {
-            if (!in_array($fieldName, $map->pks))
-            {
-                $rawMeta = $loader->meta($field);
-                $meta[ $field['fullName'] ] = $this->processMeta($rawMeta, $field['fullAlias']);
-            }
-        }
-        foreach ($map->relations as $relationName => $relation)
-        {
-            if (!$relation->multiple)
-            {
-                $subMeta = $this->collectMeta($loader, $relation);
-                $meta = array_merge($meta, $subMeta);
-            }
+	/**
+	 * @param Loader $loader
+	 * @param string $dictName
+	 * @return mixed
+	 */
+	private function loadDict($loader, $dictName)
+		{
+		$data = $loader->all();
+		$data = $this->innerProcessDict($data, $dictName);
+		return $data;
+		}
 
-        }
-        return $meta;
-    }
+	private function innerProcessDict($rows, $dictName)
+		{
+		$functionName = 'process' . ucfirst($dictName);
+		if (method_exists($this, $functionName))
+			{
+			$rows = $this->$functionName($rows);
+			}
+		return $rows;
+		}
 
-    private function processMeta($rawMeta, $field)
-    {
-        $meta = [];
-        foreach ($rawMeta as $item)
-        {
-            $meta[] = [
-                "value" => $item[ $field ],
-                "count" => $item['count(*)'],
-            ];
-        }
-        return $meta;
-    }
+	/**
+	 * @param Loader $loader
+	 * @param Map $map
+	 * @return array
+	 */
+	private function collectMeta($loader, $map)
+		{
+		$meta = [];
+		foreach ($map->fields as $fieldName => $field)
+			{
+			if (!in_array($fieldName, $map->pks))
+				{
+				$rawMeta = $loader->meta($field);
+				$meta[ $field['fullName'] ] = $this->processMeta($rawMeta, $field['fullAlias']);
+				}
+			}
+		foreach ($map->relations as $relationName => $relation)
+			{
+			if (!$relation->multiple)
+				{
+				$subMeta = $this->collectMeta($loader, $relation);
+				$meta = array_merge($meta, $subMeta);
+				}
+
+			}
+		return $meta;
+		}
+
+	private function processMeta($rawMeta, $field)
+		{
+		$meta = [];
+		foreach ($rawMeta as $item)
+			{
+			$meta[] = [
+				"value" => $item[ $field ],
+				"count" => $item['count(*)'],
+			];
+			}
+		return $meta;
+		}
 
 	public function processSql($sql)
 		{
 		return $sql;
 		}
 
-    protected static function createRepresentClassName($name)
-    {
-        $representNS = static::REPRESENT_NS;
-        $appNS = static::APP_NS;
-        $modulesNS = static::MODULES_NS;
-        $nameSep = static::NAME_SEP;
+	protected static function createRepresentClassName($name)
+		{
+		$representNS = static::REPRESENT_NS;
+		$appNS = static::APP_NS;
+		$modulesNS = static::MODULES_NS;
+		$nameSep = static::NAME_SEP;
 
-        $nameParts = explode($nameSep, $name);
-        $representName = false;
-        if (count($nameParts) == 2)
-        {
-            array_splice($nameParts, 0, 0, $representNS);
-            $name = self::standRepresentName($nameParts);
-            $representName = $appNS . $name;
-        }
-        elseif (count($nameParts) == 3)
-        {
-            array_splice($nameParts, 1, 0, $representNS);
-            $name = self::standRepresentName($nameParts);
-            $representName = $modulesNS . $name;
-        }
-        return $representName;
-    }
+		$nameParts = explode($nameSep, $name);
+		$representName = false;
+		if (count($nameParts) == 2)
+			{
+			array_splice($nameParts, 0, 0, $representNS);
+			$name = self::standRepresentName($nameParts);
+			$representName = $appNS . $name;
+			}
+		elseif (count($nameParts) == 3)
+			{
+			array_splice($nameParts, 1, 0, $representNS);
+			$name = self::standRepresentName($nameParts);
+			$representName = $modulesNS . $name;
+			}
+		return $representName;
+		}
 
-    protected static function standRepresentName($nameParts)
-    {
-        foreach ($nameParts as &$namePart)
-        {
-            if (strpos($namePart, '-'))
-            {
-                $namePart = strtolower($namePart);
-                $namePartSubs = explode("-", $namePart);
-                foreach ($namePartSubs as &$part)
-                {
-                    $part = ucfirst($part);
-                }
-                $namePart = implode($namePartSubs);
-                $namePart = lcfirst($namePart);
-            }
-        }
-        $nameParts[ count($nameParts) - 1 ] = ucfirst($nameParts[ count($nameParts) - 1 ]);
-        $name = implode("\\", $nameParts);
-        return $name;
-    }
-}
+	protected static function standRepresentName($nameParts)
+		{
+		foreach ($nameParts as &$namePart)
+			{
+			if (strpos($namePart, '-'))
+				{
+				$namePart = strtolower($namePart);
+				$namePartSubs = explode("-", $namePart);
+				foreach ($namePartSubs as &$part)
+					{
+					$part = ucfirst($part);
+					}
+				$namePart = implode($namePartSubs);
+				$namePart = lcfirst($namePart);
+				}
+			}
+		$nameParts[ count($nameParts) - 1 ] = ucfirst($nameParts[ count($nameParts) - 1 ]);
+		$name = implode("\\", $nameParts);
+		return $name;
+		}
+	}
