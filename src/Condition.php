@@ -56,6 +56,8 @@ class Condition
 			$sql = '( TRUE )';
 			}
 
+		$this->value = addslashes($this->value);
+
 		$sql = str_replace('${field}', $this->field, $sql);
 		$sql = str_replace('${value}', $this->value, $sql);
 
@@ -65,6 +67,7 @@ class Condition
 			$template = $this->templateToConcat($this->field);
 			$sql = str_replace('${template}', $template, $sql);
 			}
+//		echo $sql; die;
 
 		return $sql;
 		}
@@ -75,10 +78,10 @@ class Condition
 //		$concat = 'CONCAT(" ", field1, " (", field2, ")"'
 		$concat = 'CONCAT(';
 		$offset = 0;
-		while (strpos($template, '${', $offset) !== false)
+		while (strpos($template, '{{', $offset) !== false)
 			{
-			$start = strpos($template, '${', $offset) + 2;
-			$finish = strpos($template, '}', $start);
+			$start = strpos($template, '{{', $offset) + 2;
+			$finish = strpos($template, '}}', $start);
 
 			$subTemplate = substr($template, $offset, $start - 2 - $offset);
 			$field = substr($template, $start, $finish - $start);
@@ -87,8 +90,8 @@ class Condition
 				{
 				$concat .= '"' . $subTemplate . '", ';
 				}
-			$concat .= ' ' . $field . ' , ';
-			$offset = $finish + 1;
+			$concat .= ' TRIM( ' . $field . ' ), ';
+			$offset = $finish + 2;
 			}
 		$subTemplate = substr($template, $offset, strlen($template) - $offset);
 		if (strlen($subTemplate) > 0)
@@ -97,7 +100,7 @@ class Condition
 			}
 		$concat = substr($concat, 0, strlen($concat) - 2);
 		$concat .= ')';
-//		echo $concat;
+//		echo $concat;die;
 		return $concat;
 		}
 

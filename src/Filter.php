@@ -39,7 +39,7 @@ class Filter
 		$sql = str_replace('&&', 'AND', $sql);
 		$sql = str_replace('||', 'OR', $sql);
 		$sql = str_replace('!', 'NOT', $sql);
-		$sql = preg_replace('/[^0-9a-zA-Z()_. ]/i', '', $sql);
+		$sql = preg_replace('/[^0-9a-zA-Z()${}_. ]/i', '', $sql);
 
 		if ($sql == '')
 			{
@@ -47,6 +47,7 @@ class Filter
 			}
 
 		$parts = explode(' ', $sql);
+
 		foreach ($this->conditions as $condition)
 			{
 			foreach ($parts as &$part)

@@ -25,37 +25,66 @@ class Builder
 		$trees = $this->buildTrees($rows);
 		$trees = $this->combineTrees($trees);
 
-		$trees = $this->toMap($trees, $this->map);
-		
+		$trees = $this->toMap($trees, $this->map, true);
+//die;
 		return $trees;
 		}
-	
-	protected function toMap($trees, $map)
+
+	protected function toMap($trees, $map, $isMultiply)
 		{
-		$mapTrees = [];
-		if($map->mapBy != null)
+		foreach ($map->relations as $relationName => $relation)
 			{
-			foreach($trees as $tree)
+			if ($isMultiply == true)
 				{
-				$mapTrees[ $tree[$map->mapBy] ] = $tree;
+//				echo "multiple $relationName \n";
+				foreach ($trees as &$tree)
+					{
+					if (array_key_exists($relationName, $tree) && $tree[ $relationName ] != null)
+						{
+						$tree[ $relationName ] = $this->toMap($tree[ $relationName ], $relation, $relation->multiple);
+						}
+					}
+				}
+			else
+				{
+//				echo "single $relationName \n";
+//				print_r($trees);
+//				echo "____________________";
+				if (array_key_exists($relationName, $trees) && $trees[ $relationName ] != null)
+					{
+					$trees[ $relationName ] = $this->toMap($trees[ $relationName ], $relation, $relation->multiple);
+					}
+				}
+			}
+
+//		print_r($trees);
+
+
+		$mapTrees = [];
+		if ($map->mapBy != null)
+			{
+			foreach ($trees as $tree1)
+				{
+				$mapTrees[ $tree1[ $map->mapBy ] ] = $tree1;
 				}
 			}
 		else
 			{
 			$mapTrees = $trees;
 			}
+//		print_r($mapTrees);
 
-		foreach ($map->relations as $relationName => $relation)
-			{
-			if ($relation->multiple)
-				{
-				foreach($mapTrees as &$tree)
-					{
-					$tree[ $relationName ] = $this->toMap( $tree[ $relationName ], $relation );
-					}
-				}
-			}
 		return $mapTrees;
+		}
+
+
+	protected function isAssoc(array $arr)
+		{
+		if ([] === $arr)
+			{
+			return false;
+			}
+		return array_keys($arr) !== range(0, count($arr) - 1);
 		}
 
 	protected function buildTrees(&$rows)
@@ -76,9 +105,15 @@ class Builder
 	 */
 	protected function buildTree($row, $map)
 		{
-		$tree = [
-			"#table" => $map->tableName,
-		];
+		$tree = [];
+		if ($map->includeInfo === true)
+			{
+			$tree = [
+				"#table" => $map->tableName,
+				"#pks" => $map->pks,
+			];
+			}
+
 
 		foreach ($row as $field => $value)
 			{

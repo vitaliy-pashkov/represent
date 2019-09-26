@@ -10,7 +10,7 @@ class Represent
 	const YII_AR_RELATION_SEP = '.';
 	const DB_FIELD_SEP = '.';
 
-	const ALIAS_FIELD_SEP = '-';
+	const ALIAS_FIELD_SEP = '__';
 	const ALIAS_TABLE_SEP = '_';
 
 	const DELETE_FLAG = '#delete';
@@ -21,6 +21,7 @@ class Represent
 	const APP_NS = '\\app\\';
 	const MODULES_NS = '\\app\\modules\\';
 	const NAME_SEP = '/';
+	const ALLOW_ALL_RIGHT = '#all';
 
 	public $maxLimit = 1000000;
 
@@ -29,13 +30,16 @@ class Represent
 	public $collectRequestOptions = true;
 	public $rawMap;
 
+	public $loadAfterSave = true;
+
 
 	/** @var bool|Map $map */
 	private $map = false;
 
 
-	public function __construct($map = false, $options = [])
+	public function __construct($map = false, $options = [], $collectRequestOptions = true)
 		{
+		$this->collectRequestOptions = $collectRequestOptions;
 		$this->options = $this->collectOptions($options);
 
 		if ($map === false)
@@ -49,14 +53,14 @@ class Represent
 			}
 		}
 
-	public static function create($name, $options = [])
+	public static function create($name, $options = [], $collectRequestOptions = true)
 		{
 		$className = static::createRepresentClassName($name);
 		if (!class_exists($className))
 			{
 			throw new \Exception("Class '$className' not found by represent name '$name'");
 			}
-		return new $className (false, $options);
+		return new $className (false, $options, $collectRequestOptions);
 		}
 
 	/**
@@ -130,7 +134,11 @@ class Represent
 		$this->isMapSet();
 		$loader = new Loader($this->map, $this);
 		$data = $this->load($loader);
-		return $data;
+		if (RepresentModel::checkRights('r', $this->map->rights, ['readType' => 'all', 'rows' => $data]))
+			{
+			return $data;
+			}
+		return [];
 		}
 
 	/**
@@ -145,9 +153,13 @@ class Represent
 		$map->offset = 0;
 		$loader = new Loader($map, $this);
 		$data = $this->load($loader);
+
 		if (count($data) > 0)
 			{
-			return $data[0];
+			if (RepresentModel::checkRights('r', $this->map->rights, ['readType' => 'one', 'row' => $data[0]]))
+				{
+				return $data[0];
+				}
 			}
 		return null;
 		}
@@ -161,8 +173,15 @@ class Represent
 		$this->beforeGetDict();
 		$dictsQuery = $this->getDictMaps();
 		$map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
+
+		$get = 'all';
+		if (isset($dictQueryConfig['#get']))
+			{
+			$get = $dictQueryConfig['#get'];
+			}
+
 		$loader = new Loader($map);
-		return $this->loadDict($loader, $dictName);
+		return $this->loadDict($loader, $dictName, $get);
 		}
 
 	/**
@@ -178,9 +197,14 @@ class Represent
 				{
 				continue;
 				}
+			$get = 'all';
+			if (isset($dictQueryConfig['#get']))
+				{
+				$get = $dictQueryConfig['#get'];
+				}
 			$map = new Map($dictQueryConfig, $this, $dictName . '_map');
 			$loader = new Loader($map, $this);
-			$dicts [ $dictName ] = $this->loadDict($loader, $dictName);
+			$dicts [ $dictName ] = $this->loadDict($loader, $dictName, $get);
 			}
 		return $dicts;
 		}
@@ -222,23 +246,27 @@ class Represent
 				$transaction->commit();
 				}
 
-			if ($model != null)
+			$rowData = null;
+			if($this->loadAfterSave === true)
 				{
-				$loader = new Loader($map, $this);
-				$loader->byModel($model);
-				$data = $this->load($loader);
-				if (count($data) > 0)
+				if ($model != null)
 					{
-					$rowData = $data[0];
+					$loader = new Loader($map, $this);
+					$loader->byModel($model);
+					$data = $this->load($loader);
+					if (count($data) > 0)
+						{
+						$rowData = $data[0];
+						}
+					else
+						{
+						$rowData = [];
+						}
 					}
 				else
 					{
-					$rowData = [];
+					$rowData = $representModel->row;
 					}
-				}
-			else
-				{
-				$rowData = $representModel->row;
 				}
 			$this->afterSave($rowData, $row, $representModel->action);
 			return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
@@ -252,9 +280,9 @@ class Represent
 
 			if ($e instanceof RepresentModelException)
 				{
-				return ["status" => "FAIL", "error" => $e->info()];
+				return ["status" => "FAIL", "error" => $e->info(), 'trace' => $e->getTraceAsString()];
 				}
-			return ["status" => "FAIL", "error" => $e->getMessage()];
+			return ["status" => "FAIL", "error" => $e->getMessage(), 'trace' => $e->getTraceAsString()];
 			}
 		}
 
@@ -402,21 +430,31 @@ class Represent
 	 * @param string $dictName
 	 * @return mixed
 	 */
-	private function loadDict($loader, $dictName)
+	private function loadDict($loader, $dictName, $get)
 		{
-		$data = $loader->all();
-		$data = $this->innerProcessDict($data, $dictName);
-		return $data;
+		$dict = [
+			'data' => $loader->all(),
+			'count' => intval($loader->count()[0]['count(*)']),
+		];
+		if ($get == 'one')
+			{
+			if (count($dict['data']) > 0)
+				{
+				$dict['data'] = $dict['data'][0];
+				}
+			}
+		$dict = $this->innerProcessDict($dict, $dictName);
+		return $dict;
 		}
 
-	private function innerProcessDict($rows, $dictName)
+	private function innerProcessDict($dict, $dictName)
 		{
 		$functionName = 'process' . ucfirst($dictName);
 		if (method_exists($this, $functionName))
 			{
-			$rows = $this->$functionName($rows);
+			$dict = $this->$functionName($dict);
 			}
-		return $rows;
+		return $dict;
 		}
 
 	/**

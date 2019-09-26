@@ -74,11 +74,12 @@ class RepresentModel
 		$this->saveRelations('parent');
 
 		$this->action = $this->model->getIsNewRecord() ? 'c' : 'u';
-		if (static::checkRights($this->action, $this->map->actions))
+		if (static::checkRights($this->action, $this->map->rights, ['model' => $this->model, 'row' => $this->row]))
 			{
 			if (!$this->model->save())
 				{
-				throw new RepresentModelException($this->model, $this->model->getErrors(), $this->row);
+				$tableName = $this->model->tableName();
+				throw new RepresentModelException($this->model, $this->model->getErrors(), $this->row, $tableName);
 				}
 			}
 
@@ -218,7 +219,7 @@ class RepresentModel
 	 */
 	protected function representDeleteWithRelations($model, $map)
 		{
-		if (!static::checkRights("d", $map->actions))
+		if (!static::checkRights("d", $map->rights, ['model' => $this->model, 'row' => $this->row]))
 			{
 			return;
 			}
@@ -240,7 +241,7 @@ class RepresentModel
 		{
 		foreach ($map->relations as $relationName => $relation)
 			{
-			if (static::checkRights("d", $relation->actions) && $relation->relType == $relType)
+			if ($relation->relType == $relType)
 				{
 				if ($relation->multiple)
 					{
@@ -248,7 +249,10 @@ class RepresentModel
 					$relModels = $model->$relationName;
 					foreach ($relModels as $relModel)
 						{
-						$this->representDeleteWithRelations($relModel, $relation);
+						if (static::checkRights("d", $relation->rights, ['model' => $relModel]))
+							{
+							$this->representDeleteWithRelations($relModel, $relation);
+							}
 						}
 					}
 				else
@@ -257,7 +261,11 @@ class RepresentModel
 					$relModel = $model->$relationName;
 					if ($relModel != null)
 						{
-						$this->representDeleteWithRelations($relModel, $relation);
+						if (static::checkRights("d", $relation->rights, ['model' => $relModel]))
+							{
+							$this->representDeleteWithRelations($relModel, $relation);
+							}
+
 						}
 					}
 				}
@@ -277,11 +285,34 @@ class RepresentModel
 
 	/**
 	 * @param string $action
-	 * @param string $actions
+	 * @param array $rights
+	 * @param array $params
 	 * @return bool
 	 */
-	public static function checkRights($action, $actions)
+	public static function checkRights($action, $rights, $params = [])
 		{
-		return strpos($actions, $action) === false ? false : true;
+//		return strpos($actions, $action) === false ? false : true;
+		if (array_key_exists($action, $rights))
+			{
+			$actionRights = $rights[ $action ];
+			$rightsMap = array_flip($actionRights);
+			if (array_key_exists(Represent::ALLOW_ALL_RIGHT, $rightsMap))
+				{
+				return true;
+				}
+			else
+				{
+				$params['action'] = $action;
+				foreach ($actionRights as $right)
+					{
+					if (\yii::$app->user->can($right, $params))
+						{
+						return true;
+						}
+					}
+				}
+			}
+//		throw new \yii\web\ForbiddenHttpException("Access denied: $action, " . print_r($rights, true));
+		return false;
 		}
 	}

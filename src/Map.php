@@ -24,7 +24,7 @@ class Map
 	public $link = [];
 	public $via = null;
 	public $relType = '';
-	public $actions = 'r';
+	public $rights = ['r' => [Represent::ALLOW_ALL_RIGHT]];
 	public $mapBy = null;
 
 	public $fields = [];
@@ -37,9 +37,12 @@ class Map
 	public $shortRelations = [];
 
 	public $parent = null;
+	public $root = null;
 	public $model;
 
+	protected $rawMap;
 	protected $fieldIndex = 1;
+	public $includeInfo = true;
 
 	/**
 	 * Map constructor.
@@ -49,10 +52,20 @@ class Map
 	 * @param Map $parent
 	 * @param string $relationName
 	 */
-	function __construct($rawMap, $represent, $optionsMapName = 'map', $parent = null, $relationName = 'root')
+	function __construct($rawMap, $represent, $optionsMapName = 'map', $parent = null, $relationName = 'root', $root = null)
 		{
+		$this->rawMap = $rawMap;
 		$this->represent = $represent;
 		$this->relationName = $relationName;
+		if ($root == null)
+			{
+			$this->root = $this;
+			}
+		else
+			{
+			$this->root = $root;
+			}
+
 		if ($parent == null)
 			{
 			$this->maxLimit = $this->represent->maxLimit;
@@ -105,12 +118,14 @@ class Map
 		$this->tableName = $this->modelClass::tableName();
 		$this->pks = $this->modelClass::getTableSchema()->primaryKey;
 
-		$this->collectConfig($rawMap);
 		$this->collectFields($rawMap);
 		$this->collectRelations($rawMap);
+		$this->collectConfig($rawMap);
+
 		if ($parent == null)
 			{
 			$this->collectOptionMap($optionsMapName);
+			$this->collectCustomFields($rawMap);
 			}
 
 		unset($this->model);
@@ -122,7 +137,7 @@ class Map
 			{
 			if (is_string($relationName) && is_array($rawMap) && mb_strpos($relationName, '#') === false)
 				{
-				$relation = new Map($relationRawMap, $this->represent, null, $this, $relationName);
+				$relation = new Map($relationRawMap, $this->represent, null, $this, $relationName, $this->root);
 				$this->relations[ $relationName ] = $relation;
 				$this->shortRelations[ $relation->shortName ] = $relationName;
 				}
@@ -138,9 +153,9 @@ class Map
 			{
 			if (is_string($key) && mb_strpos($key, '#') === 0)
 				{
-				if ($key == "#actions")
+				if ($key == "#rights")
 					{
-					$this->actions = $value;
+					$this->rights = $this->normalizeRights($value);
 					}
 				if ($key == "#limit")
 					{
@@ -158,12 +173,62 @@ class Map
 					{
 					$this->order = $value;
 					}
-				if($key == "#mapBy")
+				if ($key == "#mapBy")
 					{
 					$this->mapBy = $value;
 					}
+				if ($key == "#includeInfo")
+					{
+					$this->includeInfo = $value;
+					}
 				unset($rawMap[ $key ]);
 				}
+			}
+		}
+
+	protected function normalizeRights($value)
+		{
+		if (is_string($value))
+			{
+			$actions = str_split($value);
+			$rights = [];
+			foreach ($actions as $action)
+				{
+				$rights[ $action ] = [Represent::ALLOW_ALL_RIGHT];
+				}
+			return $rights;
+			}
+		if (is_array($value))
+			{
+			$rights = [];
+			foreach ($value as $action => $rawRight)
+				{
+				$right = $rawRight;
+				if (is_string($rawRight))
+					{
+					$right = [$rawRight];
+					}
+				$actions = str_split($action);
+				foreach ($actions as $action)
+					{
+					if (array_key_exists($action, $rights))
+						{
+//						echo "$action \n";
+//						print_r($right);
+//						print_r($rights);
+						$rights[ $action ] = array_merge($rights[ $action ], $right);
+//						print_r($rights);
+//						die;
+						}
+					else
+						{
+
+						$rights[ $action ] = $right;
+
+						}
+					}
+				}
+			return $rights;
 			}
 		}
 
@@ -185,16 +250,40 @@ class Map
 					foreach ($this->model->attributes as $field => $val)
 						{
 						$this->addField($field);
+						unset($rawMap[ $key ]);
 						}
 					}
 				else
 					{
-					$this->addField($value);
+					if (strpos($value, ' AS ') === false)
+						{
+						$this->addField($value);
+						unset($rawMap[ $key ]);
+						}
 					}
-				unset($rawMap[ $key ]);
 				}
 			}
 		}
+
+	protected function collectCustomFields()
+		{
+		foreach ($this->rawMap as $key => $value)
+			{
+			if (is_numeric($key))
+				{
+				if (strpos($value, ' AS ') !== false)
+					{
+					$this->addCustomField($value);
+					unset($this->rawMap[ $key ]);
+					}
+				}
+			}
+		foreach ($this->relations as $relation)
+			{
+			$relation->collectCustomFields();
+			}
+		}
+
 
 	/**
 	 * @param $optionsMapName
@@ -202,9 +291,18 @@ class Map
 	 */
 	protected function collectOptionMap($optionsMapName)
 		{
-		if (array_key_exists($optionsMapName, $this->represent->options))
+		if (isset($this->represent->options[ $optionsMapName ]))
 			{
-			$optionMap = json_decode($this->represent->options[ $optionsMapName ], true);
+//			print_r($this->represent->options[ $optionsMapName ]);die;
+			if (is_string($this->represent->options[ $optionsMapName ]))
+				{
+				$optionMap = json_decode($this->represent->options[ $optionsMapName ], true);
+				}
+			if (is_array($this->represent->options[ $optionsMapName ]))
+				{
+				$optionMap = $this->represent->options[ $optionsMapName ];
+				}
+
 			if (isset($optionMap['filters']))
 				{
 				$filter = new Filter($optionMap['filters']);
@@ -225,7 +323,18 @@ class Map
 				}
 			if (isset($optionMap['order']))
 				{
-				$this->order = $optionMap['order'];
+//				$order = [$optionMap['order'], $this->order];
+//				$this->order = implode(' , ', $order);
+//				$this->order = [$optionMap['order'], ...$this->order];
+				if (is_array($this->order))
+					{
+					array_unshift($this->order, $optionMap['order']);
+					}
+				if (is_string($this->order))
+					{
+					$order = [$optionMap['order'], $this->order];
+					$this->order = implode(' , ', $order);
+					}
 				}
 			if (isset($optionMap['where']))
 				{
@@ -254,8 +363,32 @@ class Map
 				"alias" => $this->shortName . Represent::RELATION_SEP . $field,
 				"fullAlias" => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
 				"fullName" => static::appendPath($this->representPath, Represent::RELATION_SEP, $field),
+				"dbAlias" => $this->shortName . Represent::DB_FIELD_SEP . $field,
+				"type" => 'normal',
 			];
 			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $field;
+			$this->fieldIndex++;
+			}
+		}
+
+	protected function addCustomField($field)
+		{
+		if (!array_key_exists($field, $this->fields))
+			{
+			$short = 'f' . $this->fieldIndex;
+			list($field, $aliace) = explode(' AS ', $field);
+			$this->fields[ $aliace ] = [
+				"name" => $aliace,
+				"short" => $short,
+				"alias" => $this->shortString($field, 'dbAlias', 'alias'),
+				"fullAlias" => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
+				"fullName" => static::appendPath($this->representPath, Represent::RELATION_SEP, $field),
+				'dbAlias' => $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short,
+//				"dbAlias" => $this->shortName . Represent::DB_FIELD_SEP . $aliace,
+				"type" => 'custom',
+				"value" => $field,
+			];
+			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $aliace;
 			$this->fieldIndex++;
 			}
 		}
@@ -282,7 +415,7 @@ class Map
 	 * @param string $str
 	 * @return string
 	 */
-	public function shortString($str)
+	public function shortString($str, $normalType = 'dbAlias', $customType = 'alias')
 		{
 		$parts = explode(' ', $str);
 		foreach ($parts as &$part)
@@ -291,13 +424,35 @@ class Map
 				{
 				list($fullRelationName, $fieldName) = $this->splitField($part);
 				$relation = $this->findRelation($fullRelationName);
-				$part = $relation->shortName . Represent::DB_FIELD_SEP . $fieldName;
+
+				if ($relation == null)
+					{
+					continue;
+					}
+
+				if ($relation->fields[ $fieldName ]['type'] == 'custom')
+					{
+					$part = $relation->fields[ $fieldName ][ $customType ];
+					}
+				elseif ($relation->fields[ $fieldName ]['type'] == 'normal')
+					{
+					$part = $relation->fields[ $fieldName ][ $normalType ];
+					}
 				}
 			else
 				{
 				if ($this->isSelectedField($part))
 					{
-					$part = $this->shortName . Represent::DB_FIELD_SEP . $part;
+					$fieldName = $part;
+//					$part = $this->shortName . Represent::DB_FIELD_SEP . $part;
+					if ($this->fields[ $fieldName ]['type'] == 'custom')
+						{
+						$part = $this->fields[ $fieldName ][ $customType ];
+						}
+					elseif ($this->fields[ $fieldName ]['type'] == 'normal')
+						{
+						$part = $this->fields[ $fieldName ][ $normalType ];
+						}
 					}
 				}
 			}
@@ -344,13 +499,14 @@ class Map
 	 */
 	public function &findRelation($key, $map = null, $fullKey = null)
 		{
+
 		if ($fullKey == null)
 			{
 			$fullKey = $key;
 			}
 		if ($map == null)
 			{
-			$map = &$this;
+			$map = &$this->root;
 			}
 
 		if ($key == '')
@@ -367,7 +523,10 @@ class Map
 			{
 			return $this->findRelation($lessParts, $map->relations[ $part ], $fullKey);
 			}
-		throw new RepresentQueryException("Unknown relation $fullKey", $this->represent, $fullKey);
+		$nullRef = null;
+		return $nullRef;
+//		print_r($map);die;
+		throw new RepresentQueryException("Unknown relation $fullKey in " . print_r(array_keys($map->relations), true), $this->represent, $fullKey);
 		}
 
 	/**

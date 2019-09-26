@@ -143,19 +143,30 @@ class Loader
 			}
 
 		$selectArray = [];
+		$groupArray = [];
 		foreach ($this->map->fields as $fieldName => $fieldConfig)
 			{
-			$selectArray[] = $fieldConfig['alias'];
+			if ($fieldConfig['type'] == 'normal')
+				{
+				$selectArray[] = $fieldConfig['alias'];
+				$groupArray[] = $fieldConfig['alias'];
+				}
+			elseif ($fieldConfig['type'] == 'custom')
+				{
+				$selectArray[] = $fieldConfig['alias'] . ' AS ' . $fieldConfig['name'];
+				$groupArray[] = $fieldConfig['name'];
+				}
+
 			}
 
 		/** @var \yii\db\ActiveQuery $query */
 		$query = $this->map->modelClass::find();
 		$this->combineWhere($query, $this->map->where);
-		$this->combineOrder($query, $this->map->order/*, false*/);
+		$this->combineOrder($query, $this->map->order, true/*, false*/);
 		$query->from([$this->map->shortName => $this->map->tableName]);
 		$query->joinWith($relationArray);
 		$query->select($selectArray);
-		$query->groupBy($selectArray);
+		$query->groupBy($groupArray);
 
 		if ($limit === true)
 			{
@@ -209,7 +220,7 @@ class Loader
 				}
 			elseif (is_string($condition))
 				{
-				$query->$glueFunction($this->map->shortString($condition));
+				$query->$glueFunction($this->map->shortString($condition, 'dbAlias', 'alias'));
 				}
 			}
 		}
@@ -219,7 +230,7 @@ class Loader
 	 * @param mixed $order
 	 * @param bool $onlyRoot
 	 */
-	public function combineOrder(&$query, $order/*, $onlyRoot = false*/)
+	public function combineOrder(&$query, $order, $subQuery = false/*, $onlyRoot = false*/)
 		{
 //        if ($onlyRoot === false) {
 		if (is_array($order))
@@ -231,7 +242,15 @@ class Loader
 			$orderItems = explode(',', $order);
 			foreach ($orderItems as &$orderItem)
 				{
-				$orderItem = $this->map->shortString($orderItem);
+				if($subQuery === false)
+					{
+					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'fullAlias');
+					}
+				else
+					{
+					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'name');
+//					echo $orderItem; die;
+					}
 				}
 			$order = implode(',', $orderItems);
 			$query->orderBy([new \yii\db\Expression($order)]);
