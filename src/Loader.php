@@ -42,17 +42,20 @@ class Loader
 	public function execute($activeQuery)
 		{
 		$sql = $activeQuery->createCommand()->getRawSql();
-		if($this->represent != null)
+//		print_r($sql);
+//		die;
+		if ($this->represent != null)
 			{
 			$sql = $this->represent->processSql($sql);
 			}
-        
-        try
+
+		try
 			{
 			$data = $this->map->modelClass::getDb()->createCommand($sql)->queryAll();
 			}
 		catch (\yii\db\Exception $e)
 			{
+			
 			if ($e->errorInfo[0] == '42S22')
 				{
 				$field = str_replace("Unknown column '", '', $e->errorInfo[2]);
@@ -65,8 +68,8 @@ class Loader
 				}
 			}
 
-        return $data;
-    }
+		return $data;
+		}
 
 	public function all()
 		{
@@ -78,13 +81,16 @@ class Loader
 
 	public function allQuery()
 		{
-		list($selectArray, $relationArray) = $this->generateArrays($this->map);
+		list($selectArray, $relationArray, $groupArray) = $this->generateArrays($this->map);
 		/** @var \yii\db\ActiveQuery $query */
 		$query = $this->map->modelClass::find();
 		$query->from($this->fromQuery($relationArray));
 		$query->select($selectArray);
 		$this->combineWhere($query, $this->map->where);
 		$this->combineOrder($query, $this->map->order);
+//		print_r($groupArray);
+		$query->groupBy($groupArray);
+
 		$query->joinWith($relationArray);
 		return $query;
 		}
@@ -151,13 +157,15 @@ class Loader
 				$selectArray[] = $fieldConfig['alias'];
 				$groupArray[] = $fieldConfig['alias'];
 				}
-			elseif ($fieldConfig['type'] == 'custom')
+			elseif ($fieldConfig['type'] == 'custom' && $fieldConfig['inGroupBy'] === true)
 				{
 				$selectArray[] = $fieldConfig['alias'] . ' AS ' . $fieldConfig['name'];
-				$groupArray[] = $fieldConfig['name'];
+				$groupArray[] = $fieldConfig['fullAlias'];
 				}
 
 			}
+
+		$groupArray = array_merge($groupArray, $this->map->group);
 
 		/** @var \yii\db\ActiveQuery $query */
 		$query = $this->map->modelClass::find();
@@ -166,6 +174,8 @@ class Loader
 		$query->from([$this->map->shortName => $this->map->tableName]);
 		$query->joinWith($relationArray);
 		$query->select($selectArray);
+
+//		print_r($groupArray);
 		$query->groupBy($groupArray);
 
 		if ($limit === true)
@@ -181,11 +191,21 @@ class Loader
 
 	protected function generateArrays($map, $includeMultiple = true)
 		{
+//		print_r($map->fields);
+
 		$selectArray = [];
 		$relationArray = [];
+		$groupArray = [];
 		foreach ($map->fields as $fieldName => $fieldConfig)
 			{
-			$selectArray[] = $fieldConfig['alias'] . ' AS ' . $fieldConfig['fullAlias'];
+			if ($fieldConfig['inSelect'] == true)
+				{
+				$selectArray[] = $fieldConfig['alias'] . ' AS ' . $fieldConfig['fullAlias'];
+				}
+			if ($fieldConfig['inGroupBy'] == true)
+				{
+				$groupArray[] = $fieldConfig['fullAlias'];
+				}
 			}
 
 		foreach ($map->relations as $relationName => $relation)
@@ -203,11 +223,12 @@ class Loader
 				$this->combineWhere($relQuery, $relation->where, 'andOnCondition');
 			};
 
-			list($subSelectArray, $subRelationArray) = $this->generateArrays($relation);
+			list($subSelectArray, $subRelationArray, $subGroupArray) = $this->generateArrays($relation);
 			$selectArray = array_merge($subSelectArray, $selectArray);
 			$relationArray = array_merge($relationArray, $subRelationArray);
+			$groupArray = array_merge($groupArray, $subGroupArray);
 			}
-		return [$selectArray, $relationArray];
+		return [$selectArray, $relationArray, $groupArray];
 		}
 
 	public function combineWhere(&$query, $where, $glueFunction = 'andWhere')
@@ -242,13 +263,13 @@ class Loader
 			$orderItems = explode(',', $order);
 			foreach ($orderItems as &$orderItem)
 				{
-				if($subQuery === false)
+				if ($subQuery === false)
 					{
 					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'fullAlias');
 					}
 				else
 					{
-					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'name');
+					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'alias');
 //					echo $orderItem; die;
 					}
 				}

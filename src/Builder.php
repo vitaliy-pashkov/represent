@@ -26,6 +26,7 @@ class Builder
 		$trees = $this->combineTrees($trees);
 
 		$trees = $this->toMap($trees, $this->map, true);
+//		print_r ($this->map); die;
 //die;
 		return $trees;
 		}
@@ -216,7 +217,7 @@ class Builder
 		{
 		foreach ($pks as $key)
 			{
-			if ($obj1[ $key ] == null)
+			if (!array_key_exists($key,$obj1) || $obj1[ $key ] == null)
 				{
 				return true;
 				}

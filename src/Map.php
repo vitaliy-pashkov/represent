@@ -35,6 +35,8 @@ class Map
 	public $order = [];
 	public $relations = [];
 	public $shortRelations = [];
+	public $group = [];
+	public $counable = false;
 
 	public $parent = null;
 	public $root = null;
@@ -98,10 +100,13 @@ class Map
 
 			if ($this->via == null)
 				{
-				foreach ($this->link as $thisKey => $parentKey)
+				if (!(array_key_exists('#count', $rawMap) && $rawMap['#count'] === true))
 					{
-					$parent->addField($parentKey);
-					$this->addField($thisKey);
+					foreach ($this->link as $thisKey => $parentKey)
+						{
+						$parent->addField($parentKey);
+						$this->addField($thisKey);
+						}
 					}
 
 				$isPk = $this->modelClass::isPrimaryKey(array_keys($this->link));
@@ -115,7 +120,8 @@ class Map
 			}
 
 
-		$this->tableName = $this->modelClass::tableName();
+//		print_r($this->modelClass::getTableSchema()); die;
+		$this->tableName = $this->modelClass::getTableSchema()->fullName;//$this->modelClass::tableName();
 		$this->pks = $this->modelClass::getTableSchema()->primaryKey;
 
 		$this->collectFields($rawMap);
@@ -173,6 +179,10 @@ class Map
 					{
 					$this->order = $value;
 					}
+				if ($key == '#group')
+					{
+					$this->group = $value;
+					}
 				if ($key == "#mapBy")
 					{
 					$this->mapBy = $value;
@@ -181,6 +191,11 @@ class Map
 					{
 					$this->includeInfo = $value;
 					}
+				if ($key == "#count")
+					{
+					$this->counable = $value;
+					}
+
 				unset($rawMap[ $key ]);
 				}
 			}
@@ -237,10 +252,14 @@ class Map
 	 */
 	protected function collectFields(&$rawMap)
 		{
-		foreach ($this->pks as $key)
+		if (!(array_key_exists('#count', $rawMap) && $rawMap["#count"] === true))
 			{
-			$this->addField($key);
+			foreach ($this->pks as $key)
+				{
+				$this->addField($key);
+				}
 			}
+
 		foreach ($rawMap as $key => $value)
 			{
 			if (is_numeric($key))
@@ -257,7 +276,8 @@ class Map
 					{
 					if (strpos($value, ' AS ') === false)
 						{
-						$this->addField($value);
+						$countable = (array_key_exists('#count', $rawMap) && $rawMap["#count"] === true);
+						$this->addField($value, $countable);
 						unset($rawMap[ $key ]);
 						}
 					}
@@ -347,7 +367,7 @@ class Map
 	 * @param string $field
 	 * @throws RepresentQueryException
 	 */
-	protected function addField($field)
+	protected function addField($field, $countable = false)
 		{
 		if (!array_key_exists($field, $this->fields))
 			{
@@ -365,6 +385,8 @@ class Map
 				"fullName" => static::appendPath($this->representPath, Represent::RELATION_SEP, $field),
 				"dbAlias" => $this->shortName . Represent::DB_FIELD_SEP . $field,
 				"type" => 'normal',
+				'inSelect' => !$countable,
+				'inGroupBy' => !$countable,
 			];
 			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $field;
 			$this->fieldIndex++;
@@ -387,6 +409,8 @@ class Map
 //				"dbAlias" => $this->shortName . Represent::DB_FIELD_SEP . $aliace,
 				"type" => 'custom',
 				"value" => $field,
+				'inSelect' => true,
+				'inGroupBy' => strpos('count(', $field) !== false,
 			];
 			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $aliace;
 			$this->fieldIndex++;
@@ -445,6 +469,7 @@ class Map
 					{
 					$fieldName = $part;
 //					$part = $this->shortName . Represent::DB_FIELD_SEP . $part;
+//					print_r($this->fields[ $fieldName ]);
 					if ($this->fields[ $fieldName ]['type'] == 'custom')
 						{
 						$part = $this->fields[ $fieldName ][ $customType ];
