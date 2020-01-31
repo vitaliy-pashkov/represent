@@ -247,7 +247,7 @@ class Represent
 				}
 
 			$rowData = null;
-			if($this->loadAfterSave === true)
+			if ($this->loadAfterSave === true)
 				{
 				if ($model != null)
 					{
@@ -280,9 +280,9 @@ class Represent
 
 			if ($e instanceof RepresentModelException)
 				{
-				return ["status" => "FAIL", "error" => $e->info(), 'trace' => $e->getTraceAsString()];
+				return ["status" => "FAIL", "error" => $e->info(), 'trace' => explode("\n", $e->getTraceAsString())];
 				}
-			return ["status" => "FAIL", "error" => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+			return ["status" => "FAIL", "error" => $e->getMessage(), 'trace' => explode("\n", $e->getTraceAsString())];
 			}
 		}
 
@@ -325,7 +325,7 @@ class Represent
 				{
 				$transaction->rollBack();
 				}
-			return ["status" => "FAIL", "error" => $e->getMessage()];
+			return ["status" => "FAIL", "error" => explode("\n", $e->getMessage())];
 			}
 		}
 
@@ -397,7 +397,18 @@ class Represent
 			if (\Yii::$app instanceof \Yii\web\Application)
 				{
 				$options = array_merge(\Yii::$app->request->get(), $options);
-				$options = array_merge(\Yii::$app->request->post(), $options);
+
+				if (strpos(\Yii::$app->request->contentType, 'application/json') !== false)
+					{
+					$raw = \Yii::$app->request->getRawBody();
+					$post = json_decode($raw, true);
+					$options = array_merge($post, $options);
+					}
+				elseif (strpos(\Yii::$app->request->contentType, 'application/x-www-form-urlencoded') !== false)
+					{
+					$options = array_merge(\Yii::$app->request->post(), $options);
+					}
+
 				}
 			if (\Yii::$app instanceof \Yii\console\Application)
 				{

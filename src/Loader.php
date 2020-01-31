@@ -55,7 +55,7 @@ class Loader
 			}
 		catch (\yii\db\Exception $e)
 			{
-			
+
 			if ($e->errorInfo[0] == '42S22')
 				{
 				$field = str_replace("Unknown column '", '', $e->errorInfo[2]);
@@ -84,6 +84,8 @@ class Loader
 		list($selectArray, $relationArray, $groupArray) = $this->generateArrays($this->map);
 		/** @var \yii\db\ActiveQuery $query */
 		$query = $this->map->modelClass::find();
+
+
 		$query->from($this->fromQuery($relationArray));
 		$query->select($selectArray);
 		$this->combineWhere($query, $this->map->where);
@@ -196,6 +198,7 @@ class Loader
 		$selectArray = [];
 		$relationArray = [];
 		$groupArray = [];
+
 		foreach ($map->fields as $fieldName => $fieldConfig)
 			{
 			if ($fieldConfig['inSelect'] == true)
@@ -253,57 +256,26 @@ class Loader
 	 */
 	public function combineOrder(&$query, $order, $subQuery = false/*, $onlyRoot = false*/)
 		{
-//        if ($onlyRoot === false) {
-		if (is_array($order))
+
+		$orderItems = explode(',', $order);
+		foreach ($orderItems as &$orderItem)
 			{
-			$query->orderBy($this->map->shortArray($order));
-			}
-		elseif (is_string($order))
-			{
-			$orderItems = explode(',', $order);
-			foreach ($orderItems as &$orderItem)
+			if ($subQuery === false)
 				{
-				if ($subQuery === false)
-					{
-					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'fullAlias');
-					}
-				else
-					{
-					$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'alias');
-//					echo $orderItem; die;
-					}
+				$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'fullAlias');
 				}
-			$order = implode(',', $orderItems);
+			else
+				{
+				$orderItem = $this->map->shortString($orderItem, 'dbAlias', 'alias');
+//					echo $orderItem; die;
+				}
+			}
+		$order = implode(',', $orderItems);
+		if ($order !== '')
+			{
 			$query->orderBy([new \yii\db\Expression($order)]);
 			}
-//        } else {
-//            if (is_array($order)) {
-//                $rootOrder = [];
-//                foreach ($order as $key => $orderDir) {
-//                    if (strpos($key, Represent::RELATION_SEP) === false) {
-//                        $rootOrder[ $key ] = $orderDir;
-//                    }
-//                }
-//                $query->orderBy($this->map->shortArray($rootOrder));
-//            } elseif (is_string($order)) {
-//                $rootOrderItems = [];
-//                $orderItems = explode(',', $order);
-//                foreach ($orderItems as $orderItem) {
-//                    $parts = explode(' ', $orderItem);
-//                    $isRoot = false;
-//                    foreach ($parts as $part) {
-//                        if (strpos($part, Represent::RELATION_SEP) === false && $this->map->isSelectedField($part)) {
-//                            $isRoot = true;
-//                        }
-//                    }
-//                    if ($isRoot) {
-//                        $rootOrderItems[] = $orderItem;
-//                    }
-//                }
-//                $rootOrder = implode(',', $rootOrderItems);
-//                $query->orderBy($this->map->shortString($rootOrder));
-//            }
-//        }
+
 		}
 
 

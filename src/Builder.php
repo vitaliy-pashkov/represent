@@ -24,11 +24,57 @@ class Builder
 		{
 		$trees = $this->buildTrees($rows);
 		$trees = $this->combineTrees($trees);
+		$trees = $this->castTrees($trees, $this->map);
 
 		$trees = $this->toMap($trees, $this->map, true);
 //		print_r ($this->map); die;
 //die;
 		return $trees;
+		}
+
+
+	protected function castTrees($trees, $map)
+		{
+		foreach ($trees as &$tree)
+			{
+			$tree = $this->castTree($tree, $map);
+			}
+		return $trees;
+		}
+
+	protected function castTree($tree, $map)
+		{
+		if ($tree === null)
+			{
+			return null;
+			}
+		foreach ($map->fields as $fieldName => $field)
+			{
+			if (array_key_exists($fieldName, $tree) && array_key_exists('schema', $field))
+				{
+				$tree[ $fieldName ] = $this->castField($tree[ $fieldName ], $field['schema']);
+				}
+			}
+		foreach ($map->relations as $relationName => $relation)
+			{
+			if (array_key_exists($relationName, $tree))
+				{
+				if ($relation->multiple === true)
+					{
+					$tree[ $relationName ] = $this->castTrees($tree[ $relationName ], $relation);
+					}
+				else
+					{
+					$tree[ $relationName ] = $this->castTree($tree[ $relationName ], $relation);
+					}
+				}
+			}
+		return $tree;
+		}
+
+	protected function castField($value, $schema)
+		{
+		return $schema->phpTypecast($value);
 		}
 
 	protected function toMap($trees, $map, $isMultiply)

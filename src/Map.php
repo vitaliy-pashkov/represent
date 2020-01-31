@@ -15,6 +15,7 @@ class Map
 	public $relationPath = '';
 
 	public $shortFields = [];
+	public $tableSchema;
 
 	/** @var string|ActiveRecord $modelClass */
 	public $modelClass;
@@ -32,7 +33,7 @@ class Map
 	public $limit = false;
 	public $maxLimit;
 	public $offset = false;
-	public $order = [];
+	public $order = "";
 	public $relations = [];
 	public $shortRelations = [];
 	public $group = [];
@@ -77,6 +78,7 @@ class Map
 			$this->modelClass = $rawMap['#model'];
 			$this->model = new $this->modelClass();
 
+			$this->tableSchema = $this->model->getTableSchema();
 			$this->aliasPath = $this->shortName;
 			$this->relationPath = '';
 			$this->representPath = '';
@@ -90,6 +92,7 @@ class Map
 			$this->modelClass = $activeQuery->modelClass;
 			$this->model = new $this->modelClass();
 
+			$this->tableSchema = $this->model->getTableSchema();
 			$this->aliasPath = $parent->aliasPath . Represent::ALIAS_TABLE_SEP . $this->shortName;
 			$this->relationPath = static::appendPath($parent->relationPath, Represent::YII_AR_RELATION_SEP, $relationName);
 			$this->representPath = static::appendPath($parent->representPath, Represent::RELATION_SEP, $relationName);
@@ -346,15 +349,17 @@ class Map
 //				$order = [$optionMap['order'], $this->order];
 //				$this->order = implode(' , ', $order);
 //				$this->order = [$optionMap['order'], ...$this->order];
-				if (is_array($this->order))
-					{
-					array_unshift($this->order, $optionMap['order']);
-					}
-				if (is_string($this->order))
-					{
-					$order = [$optionMap['order'], $this->order];
-					$this->order = implode(' , ', $order);
-					}
+//				if (is_array($this->order))
+//					{
+//					array_unshift($this->order, $optionMap['order']);
+//					}
+//				if (is_string($this->order))
+//					{
+				$order = [$optionMap['order'], $this->order];
+				$order = array_diff($order, ['']);
+
+				$this->order = implode(' , ', $order);
+//					}
 				}
 			if (isset($optionMap['where']))
 				{
@@ -387,6 +392,7 @@ class Map
 				"type" => 'normal',
 				'inSelect' => !$countable,
 				'inGroupBy' => !$countable,
+				'schema' => $this->tableSchema->columns[$field],
 			];
 			$this->shortFields[ $this->aliasPath . Represent::ALIAS_FIELD_SEP . $short ] = $field;
 			$this->fieldIndex++;

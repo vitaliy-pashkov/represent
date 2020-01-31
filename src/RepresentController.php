@@ -5,100 +5,147 @@ namespace vpashkov\represent;
 use yii\web\Controller;
 
 class RepresentController extends Controller
-{
-    public function actionOne($represent, $dicts = false)
-    {
-        $represent = Represent::create($represent);
-        $response = [];
-        $response['data'] = $represent->getOne();
-        if (filter_var($dicts,FILTER_VALIDATE_BOOLEAN)) {
-            $response['dicts'] = $represent->getDicts();
-        }
-        return $this->createResponse($response);
-    }
+	{
+	public function actionOne($represent, $dicts = false)
+		{
+		$represent = Represent::create($represent);
+		$response = [];
+		$response['data'] = $represent->getOne();
+		if (filter_var($dicts, FILTER_VALIDATE_BOOLEAN))
+			{
+			$response['dicts'] = $represent->getDicts();
+			}
+		return $this->createResponse($response);
+		}
 
-    public function actionAll($represent, $count = false, $dicts = false, $meta = false)
-    {
-        $represent = Represent::create($represent);
-        $response = [];
-        $response['data'] = $represent->getAll();
-        if (filter_var($count,FILTER_VALIDATE_BOOLEAN)) {
-            $response['count'] = $represent->getCount();
-        }
-        if (filter_var($dicts,FILTER_VALIDATE_BOOLEAN)) {
-            $response['dicts'] = $represent->getDicts();
-        }
-        if (filter_var($meta,FILTER_VALIDATE_BOOLEAN)) {
-            $response['meta'] = $represent->getMeta();
-        }
-        return $this->createResponse($response);
-    }
+	public function actionAll($represent, $count = false, $dicts = false, $meta = false)
+		{
+		$represent = Represent::create($represent);
+		$response = [];
+		$response['data'] = $represent->getAll();
+		if (filter_var($count, FILTER_VALIDATE_BOOLEAN))
+			{
+			$response['count'] = $represent->getCount();
+			}
+		if (filter_var($dicts, FILTER_VALIDATE_BOOLEAN))
+			{
+			$response['dicts'] = $represent->getDicts();
+			}
+		if (filter_var($meta, FILTER_VALIDATE_BOOLEAN))
+			{
+			$response['meta'] = $represent->getMeta();
+			}
+		return $this->createResponse($response);
+		}
 
-    public function actionSave($represent)
-    {
-        $represent = Represent::create($represent);
-        $post = \Yii::$app->request->post();
-        $status = ['status' => 'fail'];
-        if (array_key_exists('rows', $post)) {
-            $status = $represent->saveAll(json_decode(\Yii::$app->request->post("rows"), true));
-        } elseif (array_key_exists('row', $post)) {
-            $status = $represent->saveOne(json_decode(\Yii::$app->request->post("row"), true));
-        }
-        return $this->createResponse($status);
-    }
+	public function actionSave($represent)
+		{
+		$represent = Represent::create($represent);
+		$status = ['status' => 'fail'];
 
-    public function actionDelete($represent)
-    {
-        $represent = Represent::create($represent);
+		if (strpos(\Yii::$app->request->contentType, 'application/json') !== false)
+			{
+			$raw = \Yii::$app->request->getRawBody();
+			$post = json_decode($raw, true);
 
-        $post = \Yii::$app->request->post();
-        $status = ['status' => 'fail'];
-        if (array_key_exists('rows', $post)) {
-            $status = $represent->deleteAll(json_decode(\Yii::$app->request->post("rows"), true));
-        } elseif (array_key_exists('row', $post)) {
-            $status = $represent->deleteOne(json_decode(\Yii::$app->request->post("row"), true));
-        }
-        return $this->createResponse($status);
-    }
+			if (array_key_exists('rows', $post))
+				{
+				$status = $represent->saveAll($post['rows']);
+				}
+			elseif (array_key_exists('row', $post))
+				{
+				$status = $represent->saveOne($post['row']);
+				}
 
-    public function actionDicts($represent)
-    {
-        $represent = Represent::create($represent);
-        $dicts = $represent->getDicts();
-        return $this->createResponse($dicts);
-    }
+			}
+		elseif (strpos(\Yii::$app->request->contentType, 'application/x-www-form-urlencoded'))
+			{
+			$post = \Yii::$app->request->post();
+			if (array_key_exists('rows', $post))
+				{
+				$status = $represent->saveAll(json_decode(\Yii::$app->request->post("rows"), true));
+				}
+			elseif (array_key_exists('row', $post))
+				{
+				$status = $represent->saveOne(json_decode(\Yii::$app->request->post("row"), true));
+				}
+			}
+		return $this->createResponse($status);
+		}
 
-    public function actionDict($represent, $dictName)
-    {
-        $represent = Represent::create($represent);
-        $dict = $represent->getDict($dictName);
-        return $this->createResponse($dict);
-    }
+	public function actionDelete($represent)
+		{
+		$represent = Represent::create($represent);
+		$status = ['status' => 'fail'];
 
-    public function actionMeta($represent)
-    {
-        $represent = Represent::create($represent);
-        return $this->createResponse($represent->getMeta());
-    }
+		if (strpos(\Yii::$app->request->contentType, 'application/json') !== false)
+			{
+			$raw = \Yii::$app->request->getRawBody();
+			$post = json_decode($raw, true);
 
-    public function actionCount($represent)
-    {
-        $represent = Represent::create($represent);
-        return $this->createResponse($represent->getCount());
-    }
+			if (array_key_exists('rows', $post))
+				{
+				$status = $represent->deleteAll($post['rows']);
+				}
+			elseif (array_key_exists('row', $post))
+				{
+				$status = $represent->deleteOne($post['row']);
+				}
+			}
+		elseif (strpos(\Yii::$app->request->contentType, 'application/x-www-form-urlencoded'))
+			{
+			$post = \Yii::$app->request->post();
+			if (array_key_exists('rows', $post))
+				{
+				$status = $represent->deleteAll(json_decode(\Yii::$app->request->post("rows"), true));
+				}
+			elseif (array_key_exists('row', $post))
+				{
+				$status = $represent->deleteOne(json_decode(\Yii::$app->request->post("row"), true));
+				}
+			}
 
-    protected function createResponse($data)
-    {
-        $response = \Yii::$app->response;
-        $response->format = \Yii\web\Response::FORMAT_JSON;
-        $response->data = $data;
-        return $response;
-    }
+		return $this->createResponse($status);
+		}
 
-    public function actionGetWidgetConfig($represent)
-    {
-        $represent = Represent::create($represent);
-        return $this->createResponse($represent->getWidgetConfig());
-    }
-}
+	public function actionDicts($represent)
+		{
+		$represent = Represent::create($represent);
+		$dicts = $represent->getDicts();
+		return $this->createResponse($dicts);
+		}
+
+	public function actionDict($represent, $dictName)
+		{
+		$represent = Represent::create($represent);
+		$dict = $represent->getDict($dictName);
+		return $this->createResponse($dict);
+		}
+
+	public function actionMeta($represent)
+		{
+		$represent = Represent::create($represent);
+		return $this->createResponse($represent->getMeta());
+		}
+
+	public function actionCount($represent)
+		{
+		$represent = Represent::create($represent);
+		return $this->createResponse($represent->getCount());
+		}
+
+	protected function createResponse($data)
+		{
+		$response = \Yii::$app->response;
+		$response->format = \Yii\web\Response::FORMAT_JSON;
+		$response->data = $data;
+		return $response;
+		}
+
+	public function actionGetWidgetConfig($represent)
+		{
+		$represent = Represent::create($represent);
+		return $this->createResponse($represent->getWidgetConfig());
+		}
+	}
     
