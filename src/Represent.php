@@ -170,7 +170,7 @@ class Represent
 	 */
 	public function getDict($dictName)
 		{
-		$this->beforeGetDict();
+		$this->beforeGetDict($dictName);
 		$dictsQuery = $this->getDictMaps();
 		$map = new Map($dictsQuery[ $dictName ], $this, $dictName . '_map');
 
@@ -238,38 +238,46 @@ class Represent
 		try
 			{
 			$row = $this->deprocess($row);
-			$representModel = new RepresentModel($row, $map);
-			$model = $representModel->representSave();
-
-			if ($transaction !== null)
+			$validationResult = $this->validate($row);
+			if ($validationResult['valid'] === true)
 				{
-				$transaction->commit();
-				}
+				$representModel = new RepresentModel($row, $map);
+				$model = $representModel->representSave();
 
-			$rowData = null;
-			if ($this->loadAfterSave === true)
-				{
-				if ($model != null)
+				if ($transaction !== null)
 					{
-					$loader = new Loader($map, $this);
-					$loader->byModel($model);
-					$data = $this->load($loader);
-					if (count($data) > 0)
+					$transaction->commit();
+					}
+
+				$rowData = null;
+				if ($this->loadAfterSave === true)
+					{
+					if ($model != null)
 						{
-						$rowData = $data[0];
+						$loader = new Loader($map, $this);
+						$loader->byModel($model);
+						$data = $this->load($loader);
+						if (count($data) > 0)
+							{
+							$rowData = $data[0];
+							}
+						else
+							{
+							$rowData = [];
+							}
 						}
 					else
 						{
-						$rowData = [];
+						$rowData = $representModel->row;
 						}
 					}
-				else
-					{
-					$rowData = $representModel->row;
-					}
+				$this->afterSave($rowData, $row, $representModel->action);
+				return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
 				}
-			$this->afterSave($rowData, $row, $representModel->action);
-			return ["status" => "OK", "row" => $rowData, "sourceRow" => $row, 'action' => $representModel->action];
+			else
+				{
+				return ["status" => 'FAIL', 'valid' => false, 'errors' => $validationResult['errors']];
+				}
 			}
 		catch (\Exception $e)
 			{
@@ -284,6 +292,32 @@ class Represent
 				}
 			return ["status" => "FAIL", "error" => $e->getMessage(), 'trace' => explode("\n", $e->getTraceAsString())];
 			}
+		}
+
+	public function validators()
+		{
+		return [];
+		}
+
+	public function validate($row)
+		{
+		$valid = true;
+		$errors = [];
+		$validators = $this->validators();
+		foreach ($validators as $code => $validator)
+			{
+			$result = $validator($row);
+			if (is_bool($result))
+				{
+				$result = ['valid' => $result, 'code' => $code];
+				}
+			if ($result['valid'] === false)
+				{
+				$valid &= $result['valid'];
+				$errors[ $code ] = $result;
+				}
+			}
+		return ['valid' => $valid, 'errors' => $errors];
 		}
 
 	public function deleteAll($rows)
@@ -337,7 +371,7 @@ class Represent
 		{
 		}
 
-	public function beforeGetDict()
+	public function beforeGetDict($dictName)
 		{
 		}
 
