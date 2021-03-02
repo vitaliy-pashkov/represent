@@ -44,12 +44,12 @@ class Represent
 		return new Represent($schema, $parameters);
 		}
 
-	protected function defaultParameters()
+	public function defaultParameters()
 		{
 		return [];
 		}
 
-	protected function schema()
+	public function schema()
 		{
 		return null;
 		}
@@ -57,7 +57,7 @@ class Represent
 	/**
 	 * @return array
 	 */
-	protected function dictSchemas()
+	public function dictSchemas()
 		{
 		return [];
 		}
@@ -316,7 +316,7 @@ class Represent
 		{
 		}
 
-	protected static function createRepresentClassName($name, Config $config)
+	public static function createRepresentClassName($name, Config $config)
 		{
 		$representNS = $config->representNs;
 		$appNS = $config->appNs;
@@ -340,7 +340,7 @@ class Represent
 		return $representName;
 		}
 
-	protected static function standRepresentName($nameParts)
+	public static function standRepresentName($nameParts)
 		{
 		foreach ($nameParts as &$namePart)
 			{
