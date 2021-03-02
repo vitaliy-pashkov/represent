@@ -1,1 +1,0 @@
-{"status":"FAIL","error":"SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`represent_test`.`test2`, CONSTRAINT `fk_map2_map11` FOREIGN KEY (`test1_id`) REFERENCES `test1` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION)\nThe SQL being executed was: DELETE FROM `test1` WHERE `id`=1"}

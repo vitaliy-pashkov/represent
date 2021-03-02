@@ -1,13 +1,14 @@
 {
-  "name": "vpashkov/yii2-represent",
+  "name": "vpashkov/represent",
+  "version": "2.0.0-beta",
 
-  "type": "yii2-extension",
+  "type": "library",
 
-  "description": "Yii2 extension for CRUD operations with data structures in relational databases.",
-  "keywords": ["yii2", "crud", "declarative", "represent"],
+  "description": "CRUD operations with data structures in relational databases.",
+  "keywords": ["crud", "declarative", "represent", "yii2", "laravel", "mysql", "pgsql"],
   "license": "BSD-3-Clause",
   "support": {
-    "issues": "https://github.com/vitaliy-pashkov/yii2-represent/issues",
+    "issues": "https://github.com/vitaliy-pashkov/represent/issues",
     "source": "https://github.com/vitaliy-pashkov"
   },
   "authors": [
@@ -17,14 +18,9 @@
     }
   ],
 
-  "require": {
-    "yiisoft/yii2": "~2.0.0"
-  },
-
   "autoload": {
     "psr-4": {
-      "vpashkov\\represent\\": "src/",
-      "@vpashkov\\represent\\tests\\" : "tests/env/"
+      "vpashkov\\represent\\": "src/"
     }
   }
 }
