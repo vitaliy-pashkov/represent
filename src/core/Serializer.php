@@ -29,7 +29,7 @@ class Serializer
 					{
 					if (array_key_exists($relationName, $tree) && $tree[ $relationName ] != null)
 						{
-						$tree[ $relationName ] = self::toMap($tree[ $relationName ], $relation, $relation->multiple);
+						$tree[ $relationName ] = self::toMap($tree[ $relationName ], $relation, $relation->relationSchema['multiple']);
 						}
 					}
 				}
@@ -40,7 +40,7 @@ class Serializer
 //				echo "____________________";
 				if (array_key_exists($relationName, $trees) && $trees[ $relationName ] != null)
 					{
-					$trees[ $relationName ] = self::toMap($trees[ $relationName ], $relation, $relation->multiple);
+					$trees[ $relationName ] = self::toMap($trees[ $relationName ], $relation, $relation->relationSchema['multiple']);
 					}
 				}
 			}

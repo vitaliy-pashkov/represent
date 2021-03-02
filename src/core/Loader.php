@@ -2,6 +2,7 @@
 
 namespace vpashkov\represent\core;
 
+use vpashkov\represent\generator\Generator;
 use vpashkov\represent\helpers\H;
 
 class Loader
@@ -36,7 +37,7 @@ class Loader
 		{
 		$trees = $this->selectRelation($this->schema, [], $this->schema->limit);
 		$trees = Serializer::serialize($trees, $this->schema);
-
+		$trees = $this->represent->processAll($trees);
 		return $trees;
 		}
 
@@ -44,6 +45,7 @@ class Loader
 		{
 		$trees = $this->selectRelation($this->schema, [], 1);
 		$trees = Serializer::serialize($trees, $this->schema);
+		$trees = $this->represent->processAll($trees);
 		if (count($trees) > 0)
 			{
 			return $trees[0];
@@ -85,7 +87,7 @@ class Loader
 		if ($schema instanceof SchemaRoot)
 			{
 			$limit = $schemaLimit !== null ? 'LIMIT ' . $schemaLimit : '';
-			$offset = $schema->offset !== null ? 'OFFSET ' . $schema->offset : '';
+			$offset = $schema->offset !== null && $schemaLimit !== null ? 'OFFSET ' . $schema->offset : '';
 			}
 		else
 			{
@@ -272,7 +274,7 @@ class Loader
 				{
 				if (array_key_exists($key, $schema->fieldsAlias))
 					{
-					$resultRow [ $schema->fieldsAlias[ $key ] ] = $value;
+					$resultRow [ $schema->fieldsAlias[ $key ] ] = $this->typecast($value, $schema->fields[ $schema->fieldsAlias[ $key ] ]['dataType']);
 					}
 				}
 
@@ -280,6 +282,13 @@ class Loader
 				{
 				$resultRow [ $addField ] = $row[ $addField ];
 				}
+			$resultRow['#table'] = $schema->tableSchema['table'];
+			$resultRow['#pks'] = [];
+			foreach ($schema->tableSchema['pks'] as $pk)
+				{
+				$resultRow['#pks'][] = $pk;
+				}
+
 			$resultRows [] = $resultRow;
 			}
 		return $resultRows;
@@ -335,6 +344,96 @@ class Loader
 				}
 			}
 		return false;
+		}
+
+	protected function typecast($value, $type)
+		{
+		$phpType = $this->getPhpType($type);
+		if ($value === '' && !in_array($type,
+				[
+					Generator::TYPE_TEXT,
+					Generator::TYPE_STRING,
+					Generator::TYPE_BINARY,
+					Generator::TYPE_CHAR,
+				],
+				true))
+			{
+			return null;
+			}
+
+		if ($value === null || gettype($value) === $phpType)
+			{
+			return $value;
+			}
+		if ($type === 'json')
+			{
+			return json_decode($value, true);
+			}
+
+		switch ($phpType)
+			{
+			case 'resource':
+			case 'string':
+				if (is_resource($value))
+					{
+					return $value;
+					}
+				return (string)$value;
+			case 'integer':
+				return (int)$value;
+			case 'boolean':
+				return (bool)$value && $value !== "\0";
+			case 'double':
+				return (float)$value;
+			}
+
+		return $value;
+		}
+
+	protected function getPhpType($type)
+		{
+		static $typeMap = [
+			// abstract type => php type
+			Generator::TYPE_INTEGER => 'integer',
+			Generator::TYPE_BOOLEAN => 'boolean',
+			Generator::TYPE_FLOAT => 'double',
+			Generator::TYPE_DOUBLE => 'double',
+			Generator::TYPE_BINARY => 'resource',
+			Generator::TYPE_JSON => 'array',
+		];
+		if (isset($typeMap[ $type ]))
+			{
+			return $typeMap[ $type ];
+			}
+
+		return 'string';
+		}
+
+	protected function getColumnPhpType($column)
+		{
+		static $typeMap = [
+			// abstract type => php type
+			self::TYPE_TINYINT => 'integer',
+			self::TYPE_SMALLINT => 'integer',
+			self::TYPE_INTEGER => 'integer',
+			self::TYPE_BIGINT => 'integer',
+			self::TYPE_BOOLEAN => 'boolean',
+			self::TYPE_FLOAT => 'double',
+			self::TYPE_DOUBLE => 'double',
+			self::TYPE_BINARY => 'resource',
+			self::TYPE_JSON => 'array',
+		];
+		if (isset($typeMap[$column->type])) {
+		if ($column->type === 'bigint') {
+		return PHP_INT_SIZE === 8 && !$column->unsigned ? 'integer' : 'string';
+		} elseif ($column->type === 'integer') {
+		return PHP_INT_SIZE === 4 && $column->unsigned ? 'string' : 'integer';
+		}
+
+		return $typeMap[$column->type];
+		}
+
+		return 'string';
 		}
 
 	public function w($name)

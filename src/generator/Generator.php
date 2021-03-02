@@ -55,7 +55,7 @@ class Generator
 
 	public static function createGenerator($representClass, $config)
 		{
-		$class = '\\app\\vpashkov\\represent\\core\\generator\\' . $config->getDbType() . 'Generator';
+		$class = '\\vpashkov\\represent\\generator\\' . $config->getDbType() . 'Generator';
 		return new $class($representClass);
 		}
 

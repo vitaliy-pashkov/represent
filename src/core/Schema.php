@@ -357,7 +357,8 @@ class Schema
 						}
 					else
 						{
-						$conditionParts [] = $this->parseString($key) . " = " . $this->parseString($value) . "";
+						$wrapper = $this->getFieldValueWrapper($key);
+						$conditionParts [] = $this->parseString($key) . " = $wrapper" . $value . "$wrapper";
 						}
 					}
 				$conditions[ $conditionName ] = implode($conditionParts);
@@ -369,12 +370,12 @@ class Schema
 			}
 
 		$where = $this->where;
-
-		if (array_key_exists('#params', $conditions))
+		$and = strlen(trim($where)) > 0 ? ' AND ' : '';
+		if (array_key_exists('#params', $conditions) && strlen(trim($conditions['#params'])) > 0)
 			{
 			if (strpos($where, '#params') === false)
 				{
-				$where .= ' AND #params';
+				$where .= " $and #params";
 				}
 			}
 		else
@@ -385,11 +386,12 @@ class Schema
 				}
 			}
 
-		if (array_key_exists('#filters', $conditions))
+		$and = strlen(trim($where)) > 0 ? ' AND ' : '';
+		if (array_key_exists('#filters', $conditions) && strlen(trim($conditions['#filters'])) > 0)
 			{
 			if (strpos($where, '#filters') === false)
 				{
-				$where .= ' AND #filters';
+				$where .= " $and #filters";
 				}
 			}
 		else

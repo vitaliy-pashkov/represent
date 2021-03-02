@@ -29,7 +29,7 @@ class Represent
 		$this->schema = new SchemaRoot($schema, $this->config, $this->schemaParameters);
 		}
 
-	public static function byName($name, $parameters, Config $config)
+	public static function byName($name, $parameters=[], ?Config $config=null)
 		{
 		$className = static::createRepresentClassName($name, $config);
 		if (!class_exists($className))
@@ -66,7 +66,7 @@ class Represent
 	 * @param array $rows
 	 * @return mixed
 	 */
-	protected function process($row)
+	public function processOne($row)
 		{
 		return $row;
 		}
@@ -75,11 +75,11 @@ class Represent
 	 * @param array $rows
 	 * @return mixed
 	 */
-	protected function processAll($rows)
+	public function processAll($rows)
 		{
 		foreach ($rows as &$row)
 			{
-			$row = $this->process($row);
+			$row = $this->processOne($row);
 			}
 		return $rows;
 		}
@@ -88,7 +88,7 @@ class Represent
 	 * @param array $row
 	 * @return mixed
 	 */
-	protected function deprocess($row)
+	public function deprocess($row)
 		{
 		return $row;
 		}

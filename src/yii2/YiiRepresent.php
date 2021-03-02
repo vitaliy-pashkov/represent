@@ -42,7 +42,7 @@ class YiiRepresent extends \vpashkov\represent\core\Represent
 		$this->transaction->commit();
 		}
 
-	public static function byName($name, $parameters, Config $config = null) : YiiRepresent
+	public static function byName($name, $parameters=[], ?Config $config = null) : YiiRepresent
 		{
 		$config = new YiiConfig();
 		return parent::byName($name, $parameters, $config);

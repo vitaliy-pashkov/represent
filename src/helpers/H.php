@@ -323,7 +323,7 @@ class H
 		return $result;
 		}
 
-	public static function randomString($length, $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	public static function randomString($length, $chars = "abcdefghijklmnopqrstuvwxyz")
 		{
 		$text = '';
 		for ($i = 0; $i < $length; $i++)
