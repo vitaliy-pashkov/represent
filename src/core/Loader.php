@@ -234,7 +234,7 @@ class Loader
 					}
 				}
 			}
-		return $relationArray;
+		return array_unique($relationArray);
 		}
 
 	public function joinSql($config)

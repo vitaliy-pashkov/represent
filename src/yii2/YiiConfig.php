@@ -19,6 +19,7 @@ class YiiConfig extends Config
 	public string $representNs = 'represents';
 
 	public string $appNs = 'app\\';
+	public string $defaultModel = 'yii\\db\\ActiveRecord';
 	public string $modelNs = 'app\\models\\';
 	public string $modulesNs = 'app\\modules\\';
 	public string $nameSep = '/';

@@ -48,4 +48,9 @@ class YiiRepresent extends \vpashkov\represent\core\Represent
 		return parent::byName($name, $parameters, $config);
 		}
 
+	public static function bySchema($schema, $parameters) : YiiRepresent
+		{
+		return new YiiRepresent($schema, $parameters);
+		}
+
 	}

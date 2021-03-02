@@ -215,6 +215,7 @@ class BaseInflector
 		'wildebeest' => 'wildebeest',
 		'Yengeese' => 'Yengeese',
 		'has' => 'has',
+		'data' => 'data',
 	];
 	/**
 	 * @var array fallback map for transliteration used by [[transliterate()]] when intl isn't available.

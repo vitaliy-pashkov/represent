@@ -18,6 +18,7 @@ class Config
 	public string $representNs = 'Represents';
 
 	public string $appNs = 'app\\';
+	public string $defaultModel = '';
 	public string $modelNs = 'app\\models\\';
 	public string $modulesNs = 'app\\modules\\';
 	public string $nameSep = '/';

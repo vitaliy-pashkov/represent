@@ -73,7 +73,7 @@ class MysqlGenerator extends Generator
 			{
 			return '\\' . $config->modelNs . ucfirst($modelName);
 			}
-		return '\Illuminate\Database\Eloquent\Model::class';
+		return $config->defaulModel;
 		}
 
 	public function collectFields($tableName)

@@ -361,7 +361,7 @@ class Schema
 						$conditionParts [] = $this->parseString($key) . " = $wrapper" . $value . "$wrapper";
 						}
 					}
-				$conditions[ $conditionName ] = implode($conditionParts);
+				$conditions[ $conditionName ] = implode(' AND ', $conditionParts);
 				}
 			if (is_string($condition))
 				{
