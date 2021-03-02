@@ -7,7 +7,7 @@
  * Time: 5:03
  */
 
-namespace app\vpashkov\represent\helpers;
+namespace vpashkov\represent\helpers;
 
 
 class H

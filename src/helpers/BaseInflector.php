@@ -1,7 +1,7 @@
 <?php
 
 
-namespace app\vpashkov\represent\helpers;
+namespace vpashkov\represent\helpers;
 
 
 /**

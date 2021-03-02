@@ -1,10 +1,10 @@
 <?php
 
 
-namespace app\vpashkov\represent\yii2;
+namespace vpashkov\represent\yii2;
 
 
-use app\vpashkov\represent\core\Config;
+use vpashkov\represent\core\Config;
 
 class YiiConfig extends Config
 	{

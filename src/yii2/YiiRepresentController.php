@@ -1,8 +1,8 @@
 <?php
 
-namespace app\vpashkov\represent\yii2;
+namespace vpashkov\represent\yii2;
 
-use app\vpashkov\represent\helpers\H;
+use vpashkov\represent\helpers\H;
 use yii\web\Controller;
 
 class YiiRepresentController extends Controller

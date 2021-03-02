@@ -1,6 +1,6 @@
 <?php
 
-namespace app\vpashkov\represent\Provider;
+namespace vpashkov\represent\Provider;
 
 use Illuminate\Support\ServiceProvider;
 use Krlove\EloquentModelGenerator\Command\GenerateModelCommand;

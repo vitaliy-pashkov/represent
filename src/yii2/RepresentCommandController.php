@@ -5,10 +5,10 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace app\vpashkov\represent\yii2;
+namespace vpashkov\represent\yii2;
 
-use app\vpashkov\represent\generator\Generator;
-use app\vpashkov\represent\helpers\BaseInflector;
+use vpashkov\represent\generator\Generator;
+use vpashkov\represent\helpers\BaseInflector;
 use yii\console\Controller;
 use yii\console\ExitCode;
 
@@ -19,7 +19,7 @@ class RepresentCommandController extends Controller
 		{
 		echo "\n";
 
-		$representClass = \app\vpashkov\represent\yii2\YiiRepresent::class;
+		$representClass = \vpashkov\represent\yii2\YiiRepresent::class;
 
 		$config = new YiiConfig();
 		$generator = Generator::createGenerator($representClass, $config);

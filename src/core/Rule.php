@@ -6,7 +6,7 @@
  * Time: 23:50
  */
 
-namespace app\vpashkov\represent\core;
+namespace vpashkov\represent\core;
 
 
 class Rule extends \yii\rbac\Rule

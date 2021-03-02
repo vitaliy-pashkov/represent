@@ -1,11 +1,11 @@
 <?php
 
 
-namespace app\vpashkov\represent\yii2;
+namespace vpashkov\represent\yii2;
 
 
-use app\vpashkov\represent\core\ModelInterface;
-use app\vpashkov\represent\core\Schema;
+use vpashkov\represent\core\ModelInterface;
+use vpashkov\represent\core\Schema;
 use yii\db\ActiveRecord;
 
 class YiiModel extends ActiveRecord implements ModelInterface

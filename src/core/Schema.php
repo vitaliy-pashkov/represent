@@ -1,9 +1,9 @@
 <?php
 
-namespace app\vpashkov\represent\core;
+namespace vpashkov\represent\core;
 
 
-use app\vpashkov\represent\helpers\H;
+use vpashkov\represent\helpers\H;
 
 class Schema
 	{

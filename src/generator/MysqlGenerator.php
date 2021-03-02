@@ -1,9 +1,9 @@
 <?php
 
-namespace app\vpashkov\represent\generator;
+namespace vpashkov\represent\generator;
 
-use app\vpashkov\represent\core\Config;
-use app\vpashkov\represent\helpers\BaseInflector;
+use vpashkov\represent\core\Config;
+use vpashkov\represent\helpers\BaseInflector;
 
 class MysqlGenerator extends Generator
 	{

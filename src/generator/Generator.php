@@ -1,6 +1,6 @@
 <?php
 
-namespace app\vpashkov\represent\generator;
+namespace vpashkov\represent\generator;
 
 class Generator
 	{

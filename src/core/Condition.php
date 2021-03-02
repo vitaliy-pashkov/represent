@@ -1,6 +1,6 @@
 <?php
 
-namespace app\vpashkov\represent\core;
+namespace vpashkov\represent\core;
 
 class Condition
 	{

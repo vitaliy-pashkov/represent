@@ -1,12 +1,12 @@
 <?php
 
 
-namespace app\vpashkov\represent\yii2;
+namespace vpashkov\represent\yii2;
 
 
-use app\vpashkov\represent\core\Config;
+use vpashkov\represent\core\Config;
 
-class YiiRepresent extends \app\vpashkov\represent\core\Represent
+class YiiRepresent extends \vpashkov\represent\core\Represent
 	{
 	const REPRESENT_NS = 'represents';
 
