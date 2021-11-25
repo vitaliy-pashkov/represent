@@ -47,13 +47,13 @@ class YiiModel extends ActiveRecord implements ModelInterface
 		return $result !== null;
 		}
 
-	public function representLink($relationName, $model)
+	public function representLink($relationName, $model, $parentRelation, $childRelation)
 		{
 		$this->link($relationName, $model);
 		}
 
 
-	public function representUnlink($relationName, $model, $deleteFlag)
+	public function representUnlink($relationName, $model, $deleteFlag, $parentRelation, $childRelation)
 		{
 		$this->unlink($relationName, $model, $deleteFlag);
 		}
@@ -81,6 +81,6 @@ class YiiModel extends ActiveRecord implements ModelInterface
 
 	public function representIsNewRecord()
 		{
-		return $this->isNewRecord;
+		return $this->getIsNewRecord();
 		}
 	}

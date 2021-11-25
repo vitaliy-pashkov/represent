@@ -22,18 +22,18 @@ class Condition
 		$patterns = [
 			'===' => '${field} = ${value}',
 			'!==' => '${field} <> ${value}',
-			'==' => '${field} = "${value}"',
-			'!=' => '${field} <> "${value}"',
+			'==' => '${field} = \'${value}\'',
+			'!=' => '${field} <> \'${value}\'',
 			'>' => '${field} > ${value}',
 			'>=' => '${field} >= ${value}',
 			'<' => '${field} < ${value}',
 			'<=' => '${field} <= ${value}',
-			'>s' => '${field} > "${value}"',
-			'>=s' => '${field} >= "${value}"',
-			'<s' => '${field} < "${value}"',
-			'<=s' => '${field} <= "${value}"',
-			'~' => '${field} LIKE "%${value}%"',
-			'!~' => 'NOT (${field} LIKE "%${value}%")',
+			'>s' => '${field} > \'${value}\'',
+			'>=s' => '${field} >= \'${value}\'',
+			'<s' => '${field} < \'${value}\'',
+			'<=s' => '${field} <= \'${value}\'',
+			'~' => '${field} LIKE \'%${value}%\'',
+			'!~' => 'NOT (${field} LIKE \'%${value}%\')',
 		];
 		$sql = $patterns[ $this->operator ];
 
@@ -70,7 +70,7 @@ class Condition
 	public function templateToConcat($template)
 		{
 //		$template = ' ${field1} (${field2})';
-//		$concat = 'CONCAT(" ", field1, " (", field2, ")"'
+//		$concat = "CONCAT(' ', field1, ' (', field2, ')'"
 		$concat = '';
 		$offset = 0;
 		$fields = [];
@@ -83,13 +83,13 @@ class Condition
 			$preField = substr($template, $offset, $start - 2 - $offset);
 			if (strlen($preField))
 				{
-				$fields [] = '"'.$preField.'"';
+				$fields [] = "'".$preField."'";
 				}
 			$fields [] = substr($template, $start, $finish - $start);
 
 			$offset = $finish + 1;
 			}
-		$postField = '"'.substr($template, $offset, strlen($template) - $offset).'"';
+		$postField = "'".substr($template, $offset, strlen($template) - $offset)."'";
 		if (strlen($postField))
 			{
 			$fields [] = $postField;

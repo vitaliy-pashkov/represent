@@ -214,8 +214,11 @@ class BaseInflector
 		'whiting' => 'whiting',
 		'wildebeest' => 'wildebeest',
 		'Yengeese' => 'Yengeese',
-		'has' => 'has',
-		'data' => 'data',
+        'has' => 'has',
+        'data' => 'data',
+        'Data' => 'Data',
+        'sms' => 'sms',
+        'Sms' => 'Sms',
 	];
 	/**
 	 * @var array fallback map for transliteration used by [[transliterate()]] when intl isn't available.

@@ -1,12 +1,14 @@
 <?php
 
 
-namespace vpashkov\represent\yii2;
+namespace vpashkov\represent\laravel;
 
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use vpashkov\represent\core\Config;
 
-class YiiConfig extends Config
+class LaravelConfig extends Config
 {
 
     public string $relationSep = '.';
@@ -16,38 +18,44 @@ class YiiConfig extends Config
     public string $unlinkFlag = '#unlink';
     public string $singletonFlag = '#singleton';
 
-    public string $representNs = 'represents';
+    public string $representNs = 'Represents';
 
-    public string $appNs = 'app\\';
-    public string $defaultModel = 'yii\\db\\ActiveRecord';
-    public string $modelNs = 'app\\models\\';
-    public string $modulesNs = 'app\\modules\\';
+    public string $appNs = 'App\\';
+    public string $defaultModel = 'Illuminate\\Database\\Eloquent\\Model';
+    public string $modelNs = 'App\\Models\\';
+    public string $modulesNs = 'App\\Modules\\';
     public string $nameSep = '/';
     public string $allowAllRights = '#all';
     public string $parametersSchemaPath = 'schema';
 
-    public string $schemaFilePath = '/models/__RepresentSchema.php';
+    public string $schemaFilePath = '/Models/__RepresentSchema.php';
 
-    public string $modelClass = YiiModel::class;
+    public $responseException = HttpResponseException::class;
+
+    public string $modelClass = LaravelModel::class;
 
 
     public function __construct()
     {
-        $this->schemaFilePath = \Yii::$app->basePath . $this->schemaFilePath;
+        $this->schemaFilePath = app_path() . $this->schemaFilePath;
 
-        if (array_key_exists('represent', \Yii::$app->params)) {
-            foreach (\Yii::$app->params['represent'] as $key => $value) {
-                $this->$key = $value;
-            }
-        }
+//        if (array_key_exists('represent', \Yii::$app->params)) {
+//            foreach (\Yii::$app->params['represent'] as $key => $value) {
+//                $this->$key = $value;
+//            }
+//        }
 
         parent::__construct();
     }
 
     static public function getDbType()
     {
-        return ucfirst(\Yii::$app->db->driverName);
+        $connection = config('database.default');
+
+        $driver = config("database.connections.{$connection}.driver");
+        return ucfirst($driver);
     }
+
 
     public function createRepresentClassName($name)
     {
@@ -81,8 +89,9 @@ class YiiConfig extends Config
                     $part = ucfirst($part);
                 }
                 $namePart = implode($namePartSubs);
-                $namePart = lcfirst($namePart);
+                $namePart = ucfirst($namePart);
             }
+            $namePart = ucfirst($namePart);
         }
         $nameParts[count($nameParts) - 1] = ucfirst($nameParts[count($nameParts) - 1]);
         $name = implode("\\", $nameParts);

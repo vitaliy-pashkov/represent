@@ -7,13 +7,13 @@ interface ModelInterface
 
 	static public function representFind($class, $where);
 
-	public function representSave();
+	public function representSave(Schema $schema);
 
 	public function representIsLinked($model, $relation);
 
-	public function representLink($relationName, $model);
+	public function representLink($relationName, $model, $parentRelation, $childRelation);
 
-	public function representUnlink($relationName, $model, $deleteFlag);
+	public function representUnlink($relationName, $model, $deleteFlag, $parentRelation, $childRelation);
 
 	public function representDelete();
 

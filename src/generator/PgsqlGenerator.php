@@ -2,8 +2,11 @@
 
 namespace vpashkov\represent\generator;
 
+use vpashkov\represent\core\Config;
+use vpashkov\represent\helpers\BaseInflector;
+
 class PgsqlGenerator extends Generator
-    {
+{
 
     public static $typeMap = [
         'bit' => self::TYPE_INTEGER,
@@ -84,82 +87,82 @@ class PgsqlGenerator extends Generator
         'xml' => self::TYPE_STRING,
     ];
 
-    public function generateSchema($outputPath = 'Models/__RepresentSchema.php')
-        {
-        $tablesList = DB::select('SELECT tablename as name
+    public function generateSchema(Config $config)
+    {
+        $tablesList = $this->representClass::execSql('SELECT tablename as name
             FROM pg_catalog.pg_tables
             WHERE schemaname != \'pg_catalog\' AND schemaname != \'information_schema\' ORDER BY name;');
 
         $tables = [];
-        foreach ($tablesList as $tableInfo)
-            {
-            $tableName = $tableInfo->name;
-            $modelName = Str::camel(Str::singular($tableName));
-            $tables[ $modelName ] = [
+        foreach ($tablesList as $tableInfo) {
+            $tableName = $tableInfo['name'];
+            $modelName = BaseInflector::singular($tableName);
+            $modelName = BaseInflector::camelize($modelName);
+            $tables[$modelName] = [
                 'table' => $tableName,
                 'pks' => $this->collectPks($tableName),
                 'fields' => $this->collectFields($tableName),
                 'relations' => $this->collectRelations($tableName),
-                'modelClass' => $this->findModel($modelName),
+                'modelClass' => $this->findModel($modelName, $config),
             ];
-            }
-        $content = "<?php return " . $this->varExport($tables, true) . ';';
-        file_put_contents($this->resolveOutputPath($outputPath), $content);
         }
+        $content = "<?php return " . $this->varExport($tables, true) . ';';
+        file_put_contents($config->schemaFilePath, $content);
+    }
 
-    public function findModel($modelName)
-        {
+    public function findModel($modelName, Config $config)
+    {
 //        $test = new BaseAdvert();
 //        echo get_class($test);
 
-        echo $this->modelNamespace . ucfirst($modelName) . ' ' . ((class_exists($this->modelNamespace . ucfirst($modelName))) ? "Class exist" : "Class not exist") . "\n";
-        if (class_exists($this->modelNamespace . ucfirst($modelName)))
-            {
-            return '\\'.$this->modelNamespace . ucfirst($modelName);
-            }
-        return '\Illuminate\Database\Eloquent\Model::class';
+        echo $config->modelNs . ucfirst($modelName) . ' ' . ((class_exists($config->modelNs . ucfirst($modelName))) ? "Class exist" : "Class not exist") . "\n";
+        if (class_exists($config->modelNs . ucfirst($modelName))) {
+            return '\\' . $config->modelNs . ucfirst($modelName);
         }
 
+        die;
+        return $config->defaultModel;
+    }
+
     public function collectFields($tableName)
-        {
-        $fieldsList = DB::select('SELECT column_name as name, is_nullable as is_nullable, data_type as db_type
+    {
+        $fieldsList = $this->representClass::execSql('SELECT column_name as name, is_nullable as is_nullable, data_type as db_type
         FROM "information_schema"."columns"
         WHERE table_name = \'' . $tableName . '\';');
 
         $fields = [];
-        foreach ($fieldsList as $fieldRaw)
-            {
-            $fields [ $fieldRaw->name ] = self::$typeMap[ $fieldRaw->db_type ];
+        foreach ($fieldsList as $fieldRaw) {
+            $fields [$fieldRaw['name']] = self::$typeMap[$fieldRaw['db_type']];
 //                [
 //                'name' => $fieldRaw->name,
 //                'is_nullable' => $fieldRaw->is_nullable,
 //                'db_type' => $fieldRaw->db_type,
 //                'type' => self::$typeMap[ $fieldRaw->db_type ],
 //            ];
-            }
-        return $fields;
         }
+
+        return $fields;
+    }
 
     public function collectPks($tableName)
-        {
-        $pksList = DB::select('SELECT a.attname as name
+    {
+        $pksList = $this->representClass::execSql('SELECT a.attname as name
             FROM   pg_index i
             JOIN   pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
-            WHERE  i.indrelid = \'' . $tableName . '\'::regclass AND i.indisprimary;');
+            WHERE  i.indrelid = \'"' . $tableName . '"\'::regclass AND i.indisprimary;');
 
         $pks = [];
-        foreach ($pksList as $pksRaw)
-            {
-            $pks[ $pksRaw->name ] = $pksRaw->name;
-            }
-
-        return $pks;
+        foreach ($pksList as $pksRaw) {
+            $pks[$pksRaw['name']] = $pksRaw['name'];
         }
 
+        return $pks;
+    }
+
     public function collectRelations($tableName)
-        {
+    {
         $relations = [];
-        $fksList = DB::select('SELECT
+        $fksList = $this->representClass::execSql('SELECT
                 tc.table_name AS self_table,
                 kcu.column_name AS self_column_name,
                 ccu.table_name AS foreign_table_name,
@@ -170,33 +173,37 @@ class PgsqlGenerator extends Generator
                 JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
             WHERE tc.constraint_type = \'FOREIGN KEY\' AND tc.table_name=\'' . $tableName . '\' ORDER BY self_column_name');
 
-        foreach ($fksList as $fks)
-            {
-            $selfPks = $this->collectPks($fks->self_table);
-            if (array_key_exists($fks->self_column_name, $selfPks))
-                {
-                $relationName = Str::camel(Str::singular($fks->foreign_table_name));
-                }
-            else
-                {
-                $relationName = preg_replace('/_id$/', '', $fks->self_column_name);
-                $relationName = preg_replace('/_Id$/', '', $relationName);
-                $relationName = preg_replace('/_ID$/', '', $relationName);
-                $relationName = Str::camel(Str::singular($relationName));
-                }
+        foreach ($fksList as $fks) {
 
-            $modelName = Str::camel(Str::singular($fks->foreign_table_name));
-            $relations[ $relationName ] = [
+//            $selfPks = $this->collectPks($fks['self_table']);
+//            if (array_key_exists($fks['self_column_name'], $selfPks)) {
+//                $relationName = lcfirst(BaseInflector::camelize(BaseInflector::singular($fks['foreign_table_name'])));
+//            } else {
+//                $relationName = preg_replace('/_id$/', '', $fks['self_column_name']);
+//                $relationName = preg_replace('/Id$/', '', $relationName);
+//                $relationName = preg_replace('/_Id$/', '', $relationName);
+//                $relationName = preg_replace('/_ID$/', '', $relationName);
+//                $relationName = lcfirst(BaseInflector::camelize(BaseInflector::singular($relationName)));
+//            }
+
+            $relationName = preg_replace('/_id$/', '', $fks['self_column_name']);
+            $relationName = preg_replace('/Id$/', '', $relationName);
+            $relationName = preg_replace('/_Id$/', '', $relationName);
+            $relationName = preg_replace('/_ID$/', '', $relationName);
+            $relationName = lcfirst(BaseInflector::camelize(BaseInflector::singular($relationName)));
+
+            $modelName = BaseInflector::camelize(BaseInflector::singular($fks['foreign_table_name']));
+            $relations[$relationName] = [
                 'model' => $modelName,
-                'table' => $fks->foreign_table_name,
-                'selfLink' => $fks->self_column_name,
-                'foreignLink' => $fks->foreign_column_name,
+                'table' => $fks['foreign_table_name'],
+                'selfLink' => $fks['self_column_name'],
+                'foreignLink' => $fks['foreign_column_name'],
                 'multiple' => false,
                 'type' => 'parent',
             ];
-            }
+        }
 
-        $fksList = DB::select('SELECT
+        $fksList = $this->representClass::execSql('SELECT
                 tc.table_name AS foreign_table_name,
                 kcu.column_name AS foreign_column_name,
                 ccu.table_name AS self_table_name,
@@ -207,35 +214,34 @@ class PgsqlGenerator extends Generator
                 JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
             WHERE tc.constraint_type = \'FOREIGN KEY\' AND ccu.table_name=\'' . $tableName . '\'  ORDER BY self_column_name');
 
-        foreach ($fksList as $fks)
-            {
-            $relationName = Str::camel(Str::plural($fks->foreign_table_name));
-            $modelName = Str::camel(Str::singular($fks->foreign_table_name));
-            $relations[ $relationName ] = [
+        foreach ($fksList as $fks) {
+            $relationName = lcfirst(BaseInflector::camelize(BaseInflector::pluralize($fks['foreign_table_name'])));
+            $modelName = BaseInflector::camelize(BaseInflector::singular($fks['foreign_table_name']));
+            $relations[$relationName] = [
 //                'name' => $relationName,
                 'model' => $modelName,
-                'table' => $fks->foreign_table_name,
-                'selfLink' => $fks->self_column_name,
-                'foreignLink' => $fks->foreign_column_name,
+                'table' => $fks['foreign_table_name'],
+                'selfLink' => $fks['self_column_name'],
+                'foreignLink' => $fks['foreign_column_name'],
                 'multiple' => true,
                 'type' => 'depend',
             ];
-            $relationName = Str::camel(Str::singular($fks->foreign_table_name));
-            $relations[ $relationName ] = [
+            $relationName = lcfirst(BaseInflector::camelize(BaseInflector::singular($fks['foreign_table_name'])));
+            $relations[$relationName] = [
 //                'name' => $relationName,
                 'model' => $modelName,
-                'table' => $fks->foreign_table_name,
-                'selfLink' => $fks->self_column_name,
-                'foreignLink' => $fks->foreign_column_name,
+                'table' => $fks['foreign_table_name'],
+                'selfLink' => $fks['self_column_name'],
+                'foreignLink' => $fks['foreign_column_name'],
                 'multiple' => false,
                 'type' => 'depend',
             ];
 
-            $foreignPks = $this->collectPks($fks->foreign_table_name);
-            if (isset($foreignPks[ $fks->foreign_column_name ]) && count($foreignPks) === 2)
-                {
+
+            $foreignPks = $this->collectPks($fks['foreign_table_name']);
+            if (isset($foreignPks[$fks['foreign_column_name']]) && count($foreignPks) === 2) {
 //                echo $fks->table_name."\n";die;
-                $viaFk = DB::selectOne('SELECT
+                $viaFk = $this->representClass::execSql('SELECT
                         tc.table_name AS via_table_name,
                         kcu.column_name as via_column_name,
                         ccu.table_name AS rel_table_name,
@@ -244,26 +250,37 @@ class PgsqlGenerator extends Generator
                         information_schema.table_constraints AS tc
                         JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
                         JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
-                    WHERE tc.constraint_type = \'FOREIGN KEY\' AND tc.table_name=\'' . $fks->foreign_table_name . '\' AND kcu.column_name <> \'' . $fks->foreign_column_name . '\' ');
+                    WHERE tc.constraint_type = \'FOREIGN KEY\' AND tc.table_name=\'' . $fks['foreign_table_name'] . '\' AND kcu.column_name <> \'' . $fks['foreign_column_name'] . '\' ');
 
-                $relationName = Str::camel(Str::plural($viaFk->rel_table_name));
-                $modelName = Str::camel(Str::singular($viaFk->rel_table_name));
-                $relations[ $relationName ] = [
+                if (count($viaFk) === 1) {
+                    $viaFk = $viaFk[0];
+                    $relationName = $viaFk['via_column_name'];
+                    $relationName = preg_replace('/_id$/', '', $relationName);
+                    $relationName = preg_replace('/Id$/', '', $relationName);
+                    $relationName = preg_replace('/_Id$/', '', $relationName);
+                    $relationName = preg_replace('/_ID$/', '', $relationName);
+                    $relationName = lcfirst(BaseInflector::camelize(BaseInflector::pluralize($relationName)));
+
+                    $modelName = BaseInflector::camelize(BaseInflector::singular($viaFk['rel_table_name']));
+                    $relations[$relationName] = [
 //                    'name' => $relationName,
-                    'model' => $modelName,
-                    'table' => $viaFk->rel_table_name,
-                    'via' => [
-                        'viaTable' => $fks->foreign_table_name,
-                        'selfLink' => $fks->self_column_name,
-                        'selfInViaLink' => $fks->foreign_column_name,
-                        'foreignInViaLink' => $viaFk->via_column_name,
-                        'foreignLink' => $viaFk->rel_column_name,
-                    ],
-                    'multiple' => true,
-                    'type' => 'via',
-                ];
+                        'model' => $modelName,
+                        'table' => $viaFk['rel_table_name'],
+                        'via' => [
+                            'viaTable' => $fks['foreign_table_name'],
+                            'selfLink' => $fks['self_column_name'],
+                            'selfInViaLink' => $fks['foreign_column_name'],
+                            'foreignInViaLink' => $viaFk['via_column_name'],
+                            'foreignLink' => $viaFk['rel_column_name'],
+                        ],
+                        'multiple' => true,
+                        'type' => 'via',
+                    ];
                 }
             }
-        return $relations;
         }
+
+        return $relations;
     }
+
+}
