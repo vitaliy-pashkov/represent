@@ -1,6 +1,6 @@
 <?php
 
-namespace vpashkov\represent\Provider;
+namespace vpashkov\represent\laravel\Provider;
 
 use Illuminate\Support\ServiceProvider;
 use Krlove\EloquentModelGenerator\Command\GenerateModelCommand;
