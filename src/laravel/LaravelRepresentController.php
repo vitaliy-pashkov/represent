@@ -33,7 +33,11 @@ class LaravelRepresentController extends Controller
     public function collectParams($request)
     {
         $params = $request->all();
-        $this->representName = H::get($params, 'represent');
+        if (H::get($params, 'represent') === null) {
+            $this->representName = implode('/', [$request->route('module'), $request->route('model'), $request->route('action')]);
+        } else {
+            $this->representName = H::get($params, 'represent');
+        }
         $this->collectDicts = H::get($params, 'dicts', 'true') === 'true' ? true : false;
         $this->dictName = H::get($params, 'dict', null);
 
